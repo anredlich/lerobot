@@ -703,25 +703,25 @@ class TrossenAIStationaryRobotConfig(ManipulatorRobotConfig):
         cameras: dict[str, CameraConfig] = field(
             default_factory=lambda: {
                 "cam_high": IntelRealSenseCameraConfig(
-                    serial_number=218622274938,
+                    serial_number=218622278990,
                     fps=30,
                     width=640,
                     height=480,
                 ),
                 "cam_low": IntelRealSenseCameraConfig(
-                    serial_number=130322272628,
+                    serial_number=218622277153,
                     fps=30,
                     width=640,
                     height=480,
                 ),
                 "cam_left_wrist": IntelRealSenseCameraConfig(
-                    serial_number=128422271347,
+                    serial_number=218722270184,
                     fps=30,
                     width=640,
                     height=480,
                 ),
                 "cam_right_wrist": IntelRealSenseCameraConfig(
-                    serial_number=218622270304,
+                    serial_number=218622278362,
                     fps=30,
                     width=640,
                     height=480,

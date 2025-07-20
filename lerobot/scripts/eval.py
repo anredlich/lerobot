@@ -482,7 +482,7 @@ def eval_main(cfg: EvalPipelineConfig):
             env,
             policy,
             cfg.eval.n_episodes,
-            max_episodes_rendered=10,
+            max_episodes_rendered=100, #anr was 10
             videos_dir=Path(cfg.output_dir) / "videos",
             start_seed=cfg.seed,
         )

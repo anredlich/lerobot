@@ -48,6 +48,12 @@ pprint(repo_ids)
 
 # Let's take this one for this example
 repo_id = "lerobot/aloha_mobile_cabinet"
+repo_id = "lerobot/aloha_static_cups_open"
+#repo_id = "lerobot/taco_play"
+repo_id = "lerobot/pusht"
+repo_id = "lerobot/act_aloha_sim_transfer_cube_human"
+#repo_id = "lerobot/columbia_cairlab_pusht_real"
+#repo_id = "ANRedlich/trossen_ai_stationary_test_01" #anr because mine does not require conversion
 # We can have a look and fetch its metadata to know more about it:
 ds_meta = LeRobotDatasetMetadata(repo_id)
 
@@ -70,7 +76,7 @@ print(ds_meta)
 
 # You can then load the actual dataset from the hub.
 # Either load any subset of episodes:
-dataset = LeRobotDataset(repo_id, episodes=[0, 10, 11, 23])
+dataset = LeRobotDataset(repo_id, episodes=[0]) #anr was episodes=[0, 10, 11, 23]
 
 # And see how many frames you have:
 print(f"Selected episodes: {dataset.episodes}")

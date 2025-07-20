@@ -24,36 +24,44 @@ pip install --no-binary=av -e ".[pusht]"`
 
 from pathlib import Path
 
-import gym_pusht  # noqa: F401
+#import gym_pusht  # noqa: F401
+import gym_aloha 
 import gymnasium as gym
 import imageio
 import numpy
 import torch
+import matplotlib.pyplot as plt
 
-from lerobot.common.policies.diffusion.modeling_diffusion import DiffusionPolicy
+#from lerobot.common.policies.diffusion.modeling_diffusion import DiffusionPolicy
+from lerobot.common.policies.act.modeling_act import ACTPolicy
 
 # Create a directory to store the video of the evaluation
-output_directory = Path("outputs/eval/example_pusht_diffusion")
+output_directory = Path("outputs/eval/example_aloha_act2") #anr example_pusht_diffusion
 output_directory.mkdir(parents=True, exist_ok=True)
 
 # Select your device
 device = "cuda"
 
-# Provide the [hugging face repo id](https://huggingface.co/lerobot/diffusion_pusht):
-pretrained_policy_path = "lerobot/diffusion_pusht"
+# Provide the [hugging face repo id](https://huggingface.co/lerobot/act_aloha_sim_transfer_cube_human):
+pretrained_policy_path = "lerobot/act_aloha_sim_transfer_cube_human"
 # OR a path to a local outputs/train folder.
-pretrained_policy_path = Path("./outputs/train/example_pusht_diffusion")
+#pretrained_policy_path = Path("lerobot/scripts/outputs/train/example_aloha_act2") #from train_aloha_policy
+#pretrained_policy_path = Path("outputs/train/act_aloha_transfer/checkpoints/last/pretrained_model") #from train.py
+pretrained_policy_path = Path("lerobot/scripts/outputs/train/act_trossen_ai_stationary_test_07_01/checkpoints/last/pretrained_model") #from training real robot
 
-policy = DiffusionPolicy.from_pretrained(pretrained_policy_path)
+
+#policy = DiffusionPolicy.from_pretrained(pretrained_policy_path)
+policy = ACTPolicy.from_pretrained(pretrained_policy_path)
 
 # Initialize evaluation environment to render two observation types:
 # an image of the scene and state/position of the agent. The environment
 # also automatically stops running after 300 interactions/steps.
 env = gym.make(
-    "gym_pusht/PushT-v0",
+    #"gym_aloha/AlohaTransferCube-v0",
+    "gym_aloha/TrossenAIStationaryTransferCube-v0",
     obs_type="pixels_agent_pos",
-    max_episode_steps=300,
-    render_mode="human"  # This enables the built-in Gymnasium viewer #anr
+    max_episode_steps=400,
+    #render_mode="human"  # This enables the built-in Gymnasium viewer #anr
 )
 
 # We can verify that the shapes of the features expected by the policy match the ones from the observations
@@ -68,8 +76,8 @@ print(env.action_space)
 
 # Reset the policy and environments to prepare for rollout
 policy.reset()
-numpy_observation, info = env.reset(seed=42)
-
+numpy_observation, info = env.reset(seed=40) #41)
+#print(f"{numpy_observation['agent_pos']}")
 
 # Prepare to collect every rewards and all the frames of the episode,
 # from initial state to final state.
@@ -79,31 +87,52 @@ frames = []
 # Render frame of the initial state
 frames.append(env.render())
 
+cam_list=["top"]
+if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube':
+    cam_list=["cam_high", "cam_low", "cam_left_wrist", "cam_right_wrist"]
+
+plt_imgs = gym_aloha.utils.plot_observation_images(numpy_observation['pixels'], cam_list)
+
 step = 0
 done = False
 while not done:
+    
+    for i in range(len(cam_list)): #anr added
+        plt_imgs[i].set_data(numpy_observation['pixels'][cam_list[i]])
+    plt.pause(0.02)
+
+    if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube':
+       numpy_observation["agent_pos"] = numpy.delete(numpy_observation["agent_pos"], [7, 15])
+    
     # Prepare observation for the policy running in Pytorch
     state = torch.from_numpy(numpy_observation["agent_pos"])
-    image = torch.from_numpy(numpy_observation["pixels"])
+    #image = torch.from_numpy(numpy_observation["pixels"]["top"]) #anr was
+    image = [] #anr added
+    for cam in cam_list:
+        image.append(torch.from_numpy(numpy_observation["pixels"][cam])) #anr new
 
     # Convert to float32 with image from channel first in [0,255]
     # to channel last in [0,1]
     state = state.to(torch.float32)
-    image = image.to(torch.float32) / 255
-    image = image.permute(2, 0, 1)
+    for i, cam in enumerate(cam_list):
+        image[i] = image[i].to(torch.float32) / 255
+        image[i] = image[i].permute(2, 0, 1)
 
     # Send data tensors from CPU to GPU
     state = state.to(device, non_blocking=True)
-    image = image.to(device, non_blocking=True)
+    for i, cam in enumerate(cam_list):
+        image[i] = image[i].to(device, non_blocking=True)
 
     # Add extra (empty) batch dimension, required to forward the policy
     state = state.unsqueeze(0)
-    image = image.unsqueeze(0)
+    for i, cam in enumerate(cam_list):
+        image[i] = image[i].unsqueeze(0)
 
     # Create the policy input dictionary
     observation = {
         "observation.state": state,
-        "observation.image": image,
+        #"observation.images.top": image[0],
+        **{f"observation.images.{cam}": image[i] for i, cam in enumerate(cam_list)}
     }
 
     # Predict the next action with respect to the current observation
@@ -113,9 +142,13 @@ while not done:
     # Prepare the action for the environment
     numpy_action = action.squeeze(0).to("cpu").numpy()
 
+    if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube':
+        temp_array = numpy.insert(numpy_action, 7, numpy_action[6])
+        numpy_action = numpy.insert(temp_array, 15, numpy_action[13])
+
     # Step through the environment and receive a new observation
     numpy_observation, reward, terminated, truncated, info = env.step(numpy_action)
-    print(f"{step=} {reward=} {terminated=}")
+    print(f"{step=} {reward=} {terminated=}") #{numpy_action[:5]}
 
     # Keep track of all the rewards and frames
     rewards.append(reward)

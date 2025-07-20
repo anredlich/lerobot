@@ -104,6 +104,7 @@ class DiffusionConfig(PreTrainedConfig):
     """
 
     # Inputs / output structure.
+    type: str = "diffusion" #anr added because config.json was missing type
     n_obs_steps: int = 2
     horizon: int = 16
     n_action_steps: int = 8
