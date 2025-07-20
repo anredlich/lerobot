@@ -47,7 +47,7 @@ pretrained_policy_path = "lerobot/act_aloha_sim_transfer_cube_human"
 # OR a path to a local outputs/train folder.
 #pretrained_policy_path = Path("lerobot/scripts/outputs/train/example_aloha_act2") #from train_aloha_policy
 #pretrained_policy_path = Path("outputs/train/act_aloha_transfer/checkpoints/last/pretrained_model") #from train.py
-pretrained_policy_path = Path("lerobot/scripts/outputs/train/act_trossen_ai_stationary_test_07_01/checkpoints/last/pretrained_model") #from training real robot
+#pretrained_policy_path = Path("lerobot/scripts/outputs/train/act_trossen_ai_stationary_test_07_01/checkpoints/last/pretrained_model") #from training real robot
 
 
 #policy = DiffusionPolicy.from_pretrained(pretrained_policy_path)
@@ -57,8 +57,8 @@ policy = ACTPolicy.from_pretrained(pretrained_policy_path)
 # an image of the scene and state/position of the agent. The environment
 # also automatically stops running after 300 interactions/steps.
 env = gym.make(
-    #"gym_aloha/AlohaTransferCube-v0",
-    "gym_aloha/TrossenAIStationaryTransferCube-v0",
+    "gym_aloha/AlohaTransferCube-v0",
+    #"gym_aloha/TrossenAIStationaryTransferCube-v0",
     obs_type="pixels_agent_pos",
     max_episode_steps=400,
     #render_mode="human"  # This enables the built-in Gymnasium viewer #anr
@@ -76,7 +76,7 @@ print(env.action_space)
 
 # Reset the policy and environments to prepare for rollout
 policy.reset()
-numpy_observation, info = env.reset(seed=40) #41)
+numpy_observation, info = env.reset(seed=41) #41)
 #print(f"{numpy_observation['agent_pos']}")
 
 # Prepare to collect every rewards and all the frames of the episode,
