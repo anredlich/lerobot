@@ -3,7 +3,11 @@ import gymnasium as gym
 import numpy as np
 import gym_aloha
 
-env = gym.make("gym_aloha/AlohaInsertion-v0")
+#env = gym.make("gym_aloha/AlohaInsertion-v0")
+#env = gym.make("gym_aloha/AlohaTransferCube-v0")
+#env = gym.make("gym_aloha/TrossenAIStationaryTransferCube-v0")
+env = gym.make("gym_aloha/TrossenAIStationaryTransferCubeEE-v0")
+
 observation, info = env.reset()
 frames = []
 

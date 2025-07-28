@@ -34,6 +34,7 @@ import matplotlib.pyplot as plt
 
 #from lerobot.common.policies.diffusion.modeling_diffusion import DiffusionPolicy
 from lerobot.common.policies.act.modeling_act import ACTPolicy
+from lerobot.common.policies.scripted_policy import PickAndTransferPolicy
 
 # Create a directory to store the video of the evaluation
 output_directory = Path("outputs/eval/example_aloha_act2") #anr example_pusht_diffusion
@@ -42,27 +43,29 @@ output_directory.mkdir(parents=True, exist_ok=True)
 # Select your device
 device = "cuda"
 
-# Provide the [hugging face repo id](https://huggingface.co/lerobot/act_aloha_sim_transfer_cube_human):
-pretrained_policy_path = "lerobot/act_aloha_sim_transfer_cube_human"
-# OR a path to a local outputs/train folder.
-#pretrained_policy_path = Path("lerobot/scripts/outputs/train/example_aloha_act2") #from train_aloha_policy
-#pretrained_policy_path = Path("outputs/train/act_aloha_transfer/checkpoints/last/pretrained_model") #from train.py
-#pretrained_policy_path = Path("lerobot/scripts/outputs/train/act_trossen_ai_stationary_test_07_01/checkpoints/last/pretrained_model") #from training real robot
-
-
-#policy = DiffusionPolicy.from_pretrained(pretrained_policy_path)
-policy = ACTPolicy.from_pretrained(pretrained_policy_path)
-
 # Initialize evaluation environment to render two observation types:
 # an image of the scene and state/position of the agent. The environment
 # also automatically stops running after 300 interactions/steps.
 env = gym.make(
-    "gym_aloha/AlohaTransferCube-v0",
-    #"gym_aloha/TrossenAIStationaryTransferCube-v0",
+    #"gym_aloha/AlohaTransferCube-v0",
+    "gym_aloha/TrossenAIStationaryTransferCube-v0",
+    #"gym_aloha/TrossenAIStationaryTransferCubeEE-v0",
     obs_type="pixels_agent_pos",
     max_episode_steps=400,
     #render_mode="human"  # This enables the built-in Gymnasium viewer #anr
 )
+
+# Provide the [hugging face repo id](https://huggingface.co/lerobot/act_aloha_sim_transfer_cube_human):
+# OR a path to a local outputs/train folder.
+#pretrained_policy_path = Path("lerobot/scripts/outputs/train/example_aloha_act2") #from train_aloha_policy
+#pretrained_policy_path = Path("outputs/train/act_aloha_transfer/checkpoints/last/pretrained_model") #from train.py
+if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube':
+    pretrained_policy_path = Path("lerobot/scripts/outputs/train/act_trossen_ai_stationary_test_07_01/checkpoints/last/pretrained_model") #from training real robot
+else:
+    pretrained_policy_path = "lerobot/act_aloha_sim_transfer_cube_human"
+
+#policy = DiffusionPolicy.from_pretrained(pretrained_policy_path)
+policy = ACTPolicy.from_pretrained(pretrained_policy_path)
 
 # We can verify that the shapes of the features expected by the policy match the ones from the observations
 # produced by the environment
@@ -88,7 +91,7 @@ frames = []
 frames.append(env.render())
 
 cam_list=["top"]
-if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube':
+if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube' or env.unwrapped.task == 'trossen_ai_stationary_transfer_cube_ee':
     cam_list=["cam_high", "cam_low", "cam_left_wrist", "cam_right_wrist"]
 
 plt_imgs = gym_aloha.utils.plot_observation_images(numpy_observation['pixels'], cam_list)

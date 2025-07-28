@@ -18,6 +18,7 @@ from pathlib import Path
 import draccus
 
 from lerobot.common.robot_devices.robots.configs import RobotConfig
+from lerobot.common.envs.configs import EnvConfig #anr added
 from lerobot.configs import parser
 from lerobot.configs.policies import PreTrainedConfig
 
@@ -122,6 +123,7 @@ class RemoteRobotConfig(ControlConfig):
 class ControlPipelineConfig:
     robot: RobotConfig
     control: ControlConfig
+    env: EnvConfig | None=None #anr added
 
     @classmethod
     def __get_path_fields__(cls) -> list[str]:
