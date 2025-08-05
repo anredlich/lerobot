@@ -138,10 +138,12 @@ import logging
 import time
 from dataclasses import asdict
 from pprint import pformat
+import cv2
 
 # from safetensors.torch import load_file, save_file
 from lerobot.common.datasets.lerobot_dataset import LeRobotDataset
-from lerobot.common.policies.factory import make_policy
+from lerobot.common.policies.factory import make_policy, get_policy_class
+from lerobot.common.policies.scripted_policy import PickAndTransferPolicy
 from lerobot.common.robot_devices.control_configs import (
     CalibrateControlConfig,
     ControlPipelineConfig,
@@ -154,7 +156,7 @@ from lerobot.common.robot_devices.control_utils import (
     control_loop,
     init_keyboard_listener,
     log_control_info,
-    record_episode,
+    #record_episode,
     reset_environment,
     sanity_check_dataset_name,
     sanity_check_dataset_robot_compatibility,
@@ -163,15 +165,185 @@ from lerobot.common.robot_devices.control_utils import (
 )
 from lerobot.common.robot_devices.robots.utils import Robot, make_robot_from_config
 from lerobot.common.robot_devices.utils import busy_wait, safe_disconnect
+from lerobot.common.robot_devices.control_utils import predict_action, is_headless
+from lerobot.common.datasets.image_writer import safe_stop_image_writer #anr added
 from lerobot.common.utils.utils import has_method, init_logging, log_say
+from lerobot.common.utils.utils import get_safe_torch_device #anr added
+from lerobot.common.policies.pretrained import PreTrainedPolicy
 from lerobot.configs import parser
 import gym_aloha
 import gymnasium as gym
+import dm_env
+import torch
+import numpy
+
+#######################################################################################
+# Control utilities
+########################################################################################
+
+@safe_stop_image_writer
+def record_sim_episode(
+    robot,
+    dataset: LeRobotDataset | None = None,
+    env=None,
+    events=None,
+    episode_time_s=None,
+    display_cameras=False,
+    policy: PreTrainedPolicy = None,
+    fps: int | None = None,
+    single_task: str | None = None,
+):
+    # TODO(rcadene): Add option to record logs
+    #if not robot.is_connected:
+    #    robot.connect()
+
+    device = "cuda" #anr get this from policy or policy config
+    policy.reset()
+
+    if events is None:
+        events = {"exit_early": False}
+
+    if episode_time_s is None:
+        episode_time_s = float("inf")
+
+    #if teleoperate and policy is not None:
+    #    raise ValueError("When `teleoperate` is True, `policy` should be None.")
+
+    if dataset is not None and single_task is None:
+        raise ValueError("You need to provide a task as argument in `single_task`.")
+
+    if dataset is not None and fps is not None and dataset.fps != fps:
+        raise ValueError(f"The dataset fps should be equal to requested fps ({dataset['fps']} != {fps}).")
+
+    numpy_observation, info = env.reset()
+    if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube_ee':
+        ts=dm_env.TimeStep(step_type=dm_env.StepType.FIRST,reward=None,discount=None,observation=info['raw_obs'])
+        print(f"cube position={ts.observation['env_state'][:3]}")
+
+    #timestamp = 0
+    #start_episode_t = time.perf_counter()
+    #while timestamp < episode_time_s:
+    for step in range(env._max_episode_steps):
+        #start_loop_t = time.perf_counter()
+
+        if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube':
+            numpy_observation["agent_pos"] = numpy.delete(numpy_observation["agent_pos"], [7, 15])
+
+        #convert from gym-aloha convention:
+        state = torch.from_numpy(numpy_observation["agent_pos"]).to(torch.float32)
+        image = [] #anr added
+        cam_list = numpy_observation["pixels"].keys()
+        for cam in cam_list:
+            image.append(torch.from_numpy(numpy_observation["pixels"][cam])) #anr new
+
+        # Create the policy input dictionary
+        data_observation = {
+            "observation.state": state,
+             **{f"observation.images.{cam}": image[i] for i, cam in enumerate(cam_list)}
+        }
+
+        # # Convert to float32 with image from channel first in [0,255]
+        # # to channel last in [0,1]
+        # state = state.to(torch.float32)
+        # for i, cam in enumerate(cam_list):
+        #     image[i] = image[i].to(torch.float32) / 255
+        #     image[i] = image[i].permute(2, 0, 1)
+
+        # # Send data tensors from CPU to GPU
+        # state = state.to(device, non_blocking=True)
+        # for i, cam in enumerate(cam_list):
+        #     image[i] = image[i].to(device, non_blocking=True)
+
+        # # Add extra (empty) batch dimension, required to forward the policy
+        # state = state.unsqueeze(0)
+        # for i, cam in enumerate(cam_list):
+        #     image[i] = image[i].unsqueeze(0)
+
+        # # Create the policy input dictionary
+        # observation = {
+        #     "observation.state": state,
+        #      **{f"observation.images.{cam}": image[i] for i, cam in enumerate(cam_list)}
+        # }
+
+        # if policy is not None:
+        #     pred_action = predict_action(
+        #         observation, policy, get_safe_torch_device(policy.config.device), policy.config.use_amp
+        #     )
+        #     # Action can eventually be clipped using `max_relative_target`,
+        #     # so action actually sent is saved in the dataset.
+        #     action = robot.send_action(pred_action)
+        #     action = {"action": action}
+
+        # if dataset is not None:
+        #     action = {"action": action}
+        #     frame = {**observation, **action, "task": single_task}
+        #     dataset.add_frame(frame)
+
+        if display_cameras and not is_headless():
+            image_keys = [key for key in data_observation if "image" in key]
+            for key in image_keys:
+                cv2.imshow(key, cv2.cvtColor(data_observation[key].numpy(), cv2.COLOR_RGB2BGR))
+            cv2.waitKey(1)
+
+        if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube_ee':
+            action = policy(ts)
+        # elif 'trossen' in env.unwrapped.task:
+        #     action = predict_action(
+        #        data_observation, policy, get_safe_torch_device(policy.config.device), policy.config.use_amp
+        #     )
+        else:
+            #action = policy.select_action(observation)
+            action = predict_action(
+               data_observation, policy, get_safe_torch_device(policy.config.device), policy.config.use_amp
+            )
+
+        # Prepare the action for the environment
+        if isinstance(action, torch.Tensor):
+            numpy_action = action.squeeze(0).to("cpu").numpy()
+        else:
+            numpy_action = action
+
+        if dataset is not None and env.unwrapped.task == 'trossen_ai_stationary_transfer_cube':
+            action = {"action": numpy_action}
+            frame = {**data_observation, **action, "task": single_task}
+            dataset.add_frame(frame)
+
+        if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube':
+            temp_array = numpy.insert(numpy_action, 7, numpy_action[6])
+            numpy_action = numpy.insert(temp_array, 15, numpy_action[13])
+
+        #if teleoperate:
+        #    observation, action = robot.teleop_step(record_data=True)
+        #else:
+            #observation = robot.capture_observation()
+        numpy_observation, reward, terminated, truncated, info = env.step(numpy_action)
+        if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube_ee':
+            if terminated:
+                ts=dm_env.TimeStep(dm_env.StepType.LAST, reward, 1.0, observation=info['raw_obs'])
+            else:
+                ts=dm_env.TimeStep(dm_env.StepType.MID, reward, 1.0, observation=info['raw_obs'])
+
+        if terminated:
+            return
+        
+        #if fps is not None:
+        #    dt_s = time.perf_counter() - start_loop_t
+        #    busy_wait(1 / fps - dt_s)
+
+        #dt_s = time.perf_counter() - start_loop_t
+        #log_control_info(robot, dt_s, fps=fps)
+
+        #timestamp = time.perf_counter() - start_episode_t
+        #if events["exit_early"]:
+        #    events["exit_early"] = False
+        #    break
+
+        # if policy is not None:
+        #     policy.reset()
 
 ########################################################################################
 # Control modes
 ########################################################################################
-
 
 @safe_disconnect
 def calibrate(robot: Robot, cfg: CalibrateControlConfig):
@@ -270,10 +442,16 @@ def record_sim(
         )
 
     # Load pretrained policy
-    policy = None if cfg.policy is None else make_policy(cfg.policy, ds_meta=dataset.meta)
-
-    #anr sim uses env, not robot
+    if cfg.policy == 'scripted_policy':
+        inject_noise = False
+        policy = PickAndTransferPolicy(inject_noise)
+    elif 'trossen' in env.unwrapped.task:
+        policy = None if cfg.policy is None else make_policy(cfg.policy, ds_meta=dataset.meta)
+    else:
+        policy_cls = get_policy_class(cfg.policy.type)
+        policy = policy_cls.from_pretrained(cfg.policy.pretrained_path)
     
+    #anr sim uses env, not robot
     #if not robot.is_connected:
     #    robot.connect()
 
@@ -296,9 +474,10 @@ def record_sim(
             break
 
         log_say(f"Recording episode {dataset.num_episodes}", cfg.play_sounds)
-        record_episode(
+        record_sim_episode(
             robot=robot,
             dataset=dataset,
+            env=env,
             events=events,
             episode_time_s=cfg.episode_time_s,
             display_cameras=cfg.display_cameras,
@@ -311,32 +490,33 @@ def record_sim(
         # Current code logic doesn't allow to teleoperate during this time.
         # TODO(rcadene): add an option to enable teleoperation during reset
         # Skip reset for the last episode to be recorded
-        if not events["stop_recording"] and (
-            (recorded_episodes < cfg.num_episodes - 1) or events["rerecord_episode"]
-        ):
-            log_say("Reset the environment", cfg.play_sounds)
-            reset_environment(robot, events, cfg.reset_time_s, cfg.fps)
+        #if not events["stop_recording"] and (
+        #    (recorded_episodes < cfg.num_episodes - 1) or events["rerecord_episode"]
+        #):
+        #    log_say("Reset the environment", cfg.play_sounds)
+        #    reset_environment(robot, events, cfg.reset_time_s, cfg.fps)
 
-        if events["rerecord_episode"]:
-            log_say("Re-record episode", cfg.play_sounds)
-            events["rerecord_episode"] = False
-            events["exit_early"] = False
-            dataset.clear_episode_buffer()
-            continue
+        #if events["rerecord_episode"]:
+        #    log_say("Re-record episode", cfg.play_sounds)
+        #    events["rerecord_episode"] = False
+        #    events["exit_early"] = False
+        #    dataset.clear_episode_buffer()
+        #    continue
 
-        dataset.save_episode()
+        if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube':
+            dataset.save_episode()
         recorded_episodes += 1
 
-        if events["stop_recording"]:
-            break
+        #if events["stop_recording"]:
+        #    break
 
-    log_say("Stop recording", cfg.play_sounds, blocking=True)
-    stop_recording(robot, listener, cfg.display_cameras)
+    #log_say("Stop recording", cfg.play_sounds, blocking=True)
+    #stop_recording(robot, listener, cfg.display_cameras)
 
     if cfg.push_to_hub:
         dataset.push_to_hub(tags=cfg.tags, private=cfg.private)
 
-    log_say("Exiting", cfg.play_sounds)
+    #log_say("Exiting", cfg.play_sounds)
     return dataset
 
 
@@ -379,9 +559,9 @@ def control_sim_robot(cfg: ControlPipelineConfig):
         )
 
     env = gym.make(
-        cfg.env.task, "gym_aloha/TrossenAIStationaryTransferCube-v0", "gym_aloha/AlohaTransferCube-v0",
-        #obs_type="pixels_agent_pos",   default
-        #max_episode_steps=400,         default
+        cfg.env.task, #"gym_aloha/TrossenAIStationaryTransferCube-v0", "gym_aloha/AlohaTransferCube-v0",
+        obs_type="pixels_agent_pos",
+        max_episode_steps=500, #400
         #render_mode="human"  # This enables the built-in Gymnasium viewer #anr default
     )
 

@@ -64,6 +64,11 @@ class BasePolicy:
         """
         raise NotImplementedError
 
+    def reset(self):
+        self.step_count = 0
+        self.left_trajectory = []
+        self.right_trajectory = []
+
     @staticmethod
     def interpolate(
         curr_waypoint: dict,

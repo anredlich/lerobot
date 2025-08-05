@@ -31,6 +31,7 @@ import imageio
 import numpy
 import torch
 import matplotlib.pyplot as plt
+import dm_env
 
 #from lerobot.common.policies.diffusion.modeling_diffusion import DiffusionPolicy
 from lerobot.common.policies.act.modeling_act import ACTPolicy
@@ -44,14 +45,19 @@ output_directory.mkdir(parents=True, exist_ok=True)
 device = "cuda"
 
 # Initialize evaluation environment to render two observation types:
-# an image of the scene and state/position of the agent. The environment
+# an image of the scene and state/position cube position=[-0.02472291 -0.13617125  0.0125    ]of the agent. The environment
 # also automatically stops running after 300 interactions/steps.
+id = "gym_aloha/AlohaTransferCube-v0"
+#id = "gym_aloha/TrossenAIStationaryTransferCube-v0"
+#id = "gym_aloha/TrossenAIStationaryTransferCubeEE-v0"
+if id == "gym_aloha/TrossenAIStationaryTransferCubeEE-v0":
+    max_episode_steps = 500
+else:
+    max_episode_steps = 400
 env = gym.make(
-    #"gym_aloha/AlohaTransferCube-v0",
-    "gym_aloha/TrossenAIStationaryTransferCube-v0",
-    #"gym_aloha/TrossenAIStationaryTransferCubeEE-v0",
+    id,
     obs_type="pixels_agent_pos",
-    max_episode_steps=400,
+    max_episode_steps=max_episode_steps,
     #render_mode="human"  # This enables the built-in Gymnasium viewer #anr
 )
 
@@ -61,25 +67,42 @@ env = gym.make(
 #pretrained_policy_path = Path("outputs/train/act_aloha_transfer/checkpoints/last/pretrained_model") #from train.py
 if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube':
     pretrained_policy_path = Path("lerobot/scripts/outputs/train/act_trossen_ai_stationary_test_07_01/checkpoints/last/pretrained_model") #from training real robot
-else:
+    policy = ACTPolicy.from_pretrained(pretrained_policy_path)
+if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube_ee':
+    inject_noise = False
+    policy_cls = PickAndTransferPolicy
+    policy = PickAndTransferPolicy(inject_noise)
+elif env.unwrapped.task == 'transfer_cube':
     pretrained_policy_path = "lerobot/act_aloha_sim_transfer_cube_human"
+    policy = ACTPolicy.from_pretrained(pretrained_policy_path)
 
 #policy = DiffusionPolicy.from_pretrained(pretrained_policy_path)
-policy = ACTPolicy.from_pretrained(pretrained_policy_path)
 
 # We can verify that the shapes of the features expected by the policy match the ones from the observations
 # produced by the environment
-print(policy.config.input_features)
+if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube_ee':
+    print(16)
+else:
+    print(policy.config.input_features)
 print(env.observation_space)
 
 # Similarly, we can check that the actions produced by the policy will match the actions expected by the
 # environment
-print(policy.config.output_features)
+if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube_ee':
+    print(16)
+else:
+    print(policy.config.output_features)
 print(env.action_space)
 
 # Reset the policy and environments to prepare for rollout
-policy.reset()
+if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube_ee':
+    print('resetting ?')
+else:
+    policy.reset()
 numpy_observation, info = env.reset(seed=41) #41)
+if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube_ee':
+    ts=dm_env.TimeStep(step_type=dm_env.StepType.FIRST,reward=None,discount=None,observation=info['raw_obs'])
+    print(f"cube position={ts.observation['env_state'][:3]}")
 #print(f"{numpy_observation['agent_pos']}")
 
 # Prepare to collect every rewards and all the frames of the episode,
@@ -140,10 +163,16 @@ while not done:
 
     # Predict the next action with respect to the current observation
     with torch.inference_mode():
-        action = policy.select_action(observation)
+        if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube_ee':
+            action = policy(ts)
+        else:
+            action = policy.select_action(observation)
 
     # Prepare the action for the environment
-    numpy_action = action.squeeze(0).to("cpu").numpy()
+    if isinstance(action, torch.Tensor):
+        numpy_action = action.squeeze(0).to("cpu").numpy()
+    else:
+        numpy_action = action
 
     if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube':
         temp_array = numpy.insert(numpy_action, 7, numpy_action[6])
@@ -152,6 +181,11 @@ while not done:
     # Step through the environment and receive a new observation
     numpy_observation, reward, terminated, truncated, info = env.step(numpy_action)
     print(f"{step=} {reward=} {terminated=}") #{numpy_action[:5]}
+    if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube_ee':
+        if terminated:
+            ts=dm_env.TimeStep(dm_env.StepType.LAST, reward, 1.0, observation=info['raw_obs'])
+        else:
+            ts=dm_env.TimeStep(dm_env.StepType.MID, reward, 1.0, observation=info['raw_obs'])
 
     # Keep track of all the rewards and frames
     rewards.append(reward)
