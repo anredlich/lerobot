@@ -68,6 +68,7 @@ class TrossenArmDriver:
         self.ip = config.ip
         self.model = config.model
         self.mock = config.mock
+        self.min_time_to_move_multiplier = config.min_time_to_move_multiplier
         self.driver = None
         self.calibration = None
         self.is_connected = False
@@ -87,8 +88,13 @@ class TrossenArmDriver:
             "joint_6": [7, "4310"],
         }
 
+        if self.min_time_to_move_multiplier <= 0:
+            raise ValueError(
+                f"Invalid min_time_to_move_multiplier: {self.min_time_to_move_multiplier}. "
+                "It must be a positive number."
+            )
         # Minimum time to move for the arm
-        self.MIN_TIME_TO_MOVE = 3.0 / self.fps
+        self.MIN_TIME_TO_MOVE = self.min_time_to_move_multiplier / self.fps
 
     def connect(self):
         print(f"Connecting to {self.model} arm at {self.ip}...")
@@ -177,9 +183,9 @@ class TrossenArmDriver:
         # Read the present position of the motors
         if data_name == "Present_Position":
             # Get the positions of the motors
-            values = self.driver.get_positions()
+            values = self.driver.get_all_positions()
         elif data_name == "External_Efforts":
-            values = self.driver.get_external_efforts()
+            values = self.driver.get_all_external_efforts()
         else:
             values = None
             print(f"Data name: {data_name} is not supported for reading.")
@@ -218,7 +224,7 @@ class TrossenArmDriver:
             self.driver.set_all_modes(trossen.Mode.position)
             self.driver.set_all_positions(self.home_pose, 2.0, False)
         elif data_name == "External_Efforts":
-            self.driver.set_all_external_efforts(values, 0.0, False)
+            self.driver.set_all_external_efforts(values.tolist(), 0.0, False)
         else:
             print(f"Data name: {data_name} value: {values} is not supported for writing.")
 

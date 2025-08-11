@@ -14,7 +14,7 @@
 
 import abc
 from dataclasses import dataclass, field
-from typing import Literal, Sequence
+from typing import Sequence
 
 import draccus
 
@@ -627,49 +627,64 @@ class TrossenAIStationaryRobotConfig(ManipulatorRobotConfig):
     # Also, everything is expected to work safely out-of-the-box, but we highly advise to
     # first try to teleoperate the grippers only (by commenting out the rest of the motors in this yaml),
     # then to gradually add more motors (by uncommenting), until you can teleoperate both arms fully
-    max_relative_target: int | None = 5
+    max_relative_target: float | None = 5.0
 
     # Gain applied to external efforts sensed on the follower arm and transmitted to the leader arm.
     # This enables the user to feel external forces (e.g., contact with objects) through force feedback.
     # A value of 0.0 disables force feedback. A good starting value for a responsive experience is 0.1.
     force_feedback_gain: float = 0.0
 
+    # Multiplier for computing minimum time (in seconds) for the arm to reach a target position.
+    # The final goal time is computed as: min_time_to_move = multiplier / fps.
+    # A smaller multiplier results in faster (but potentially jerky) motion.
+    # A larger multiplier results in smoother motion but with increased lag.
+    # A recommended starting value is 3.0.
+    min_time_to_move_multiplier: float = 3.0
+
     # Set this according to the camera interface you want to use.
     # "intel_realsense" is the default and recommended option.
     # "opencv" is a fallback option that uses OpenCV to access the cameras.
-    camera_interface: Literal["intel_realsense", "opencv"] = "intel_realsense"
+    camera_interface: str = "intel_realsense"
 
-    leader_arms: dict[str, MotorsBusConfig] = field(
-        default_factory=lambda: {
+    leader_arms: dict[str, MotorsBusConfig] = field(init=False)  # Initialized later
+
+    follower_arms: dict[str, MotorsBusConfig] = field(init=False)  # Initialized later
+
+    cameras: dict[str, CameraConfig] = field(init=False)  # Initialized later
+
+    mock: bool = False
+
+    def __post_init__(self):
+        self.leader_arms = {
             "left": TrossenArmDriverConfig(
                 # wxai
                 ip="192.168.1.3",
                 model="V0_LEADER",
+                min_time_to_move_multiplier=self.min_time_to_move_multiplier,
             ),
             "right": TrossenArmDriverConfig(
                 # wxai
                 ip="192.168.1.2",
                 model="V0_LEADER",
+                min_time_to_move_multiplier=self.min_time_to_move_multiplier,
             ),
         }
-    )
 
-    follower_arms: dict[str, MotorsBusConfig] = field(
-        default_factory=lambda: {
+        self.follower_arms = {
             "left": TrossenArmDriverConfig(
                 ip="192.168.1.5",
                 model="V0_FOLLOWER",
+                min_time_to_move_multiplier=self.min_time_to_move_multiplier,
             ),
             "right": TrossenArmDriverConfig(
                 ip="192.168.1.4",
                 model="V0_FOLLOWER",
+                min_time_to_move_multiplier=self.min_time_to_move_multiplier,
             ),
         }
-    )
-
-    if camera_interface == "opencv":
-        cameras: dict[str, CameraConfig] = field(
-            default_factory=lambda: {
+        # Initialize cameras based on the selected camera interface
+        if self.camera_interface == "opencv":
+            self.cameras = {
                 "cam_high": OpenCVCameraConfig(
                     camera_index=26,
                     fps=30,
@@ -695,13 +710,12 @@ class TrossenAIStationaryRobotConfig(ManipulatorRobotConfig):
                     height=480,
                 ),
             }
-        )
-    elif camera_interface == "intel_realsense":
-        # Troubleshooting: If one of your IntelRealSense cameras freeze during
-        # data recording due to bandwidth limit, you might need to plug the camera
-        # on another USB hub or PCIe card.
-        cameras: dict[str, CameraConfig] = field(
-            default_factory=lambda: {
+
+        elif self.camera_interface == "intel_realsense":
+            # Troubleshooting: If one of your IntelRealSense cameras freeze during
+            # data recording due to bandwidth limit, you might need to plug the camera
+            # on another USB hub or PCIe card.
+            self.cameras: dict[str, CameraConfig] = {
                 "cam_high": IntelRealSenseCameraConfig(
                     serial_number=218622278990,
                     fps=30,
@@ -727,13 +741,11 @@ class TrossenAIStationaryRobotConfig(ManipulatorRobotConfig):
                     height=480,
                 ),
             }
-        )
-    else:
-        raise ValueError(
-            f"Unknown camera interface: {camera_interface}. Supported values are 'opencv' and 'intel_realsense'."
-        )
 
-    mock: bool = False
+        else:
+            raise ValueError(
+                f"Unknown camera interface: {self.camera_interface}. Supported values are 'opencv' and 'intel_realsense'."
+            )
 
 
 @RobotConfig.register_subclass("trossen_ai_solo")
@@ -749,40 +761,53 @@ class TrossenAISoloRobotConfig(ManipulatorRobotConfig):
     # Also, everything is expected to work safely out-of-the-box, but we highly advise to
     # first try to teleoperate the grippers only (by commenting out the rest of the motors in this yaml),
     # then to gradually add more motors (by uncommenting), until you can teleoperate both arms fully
-    max_relative_target: int | None = 5
+    max_relative_target: float | None = 5.0
 
     # Gain applied to external efforts sensed on the follower arm and transmitted to the leader arm.
     # This enables the user to feel external forces (e.g., contact with objects) through force feedback.
     # A value of 0.0 disables force feedback. A good starting value for a responsive experience is 0.1.
     force_feedback_gain: float = 0.0
 
+    # Multiplier for computing minimum time (in seconds) for the arm to reach a target position.
+    # The final goal time is computed as: min_time_to_move = multiplier / fps.
+    # A smaller multiplier results in faster (but potentially jerky) motion.
+    # A larger multiplier results in smoother motion but with increased lag.
+    # A recommended starting value is 3.0.
+    min_time_to_move_multiplier: float = 3.0
+
     # Set this according to the camera interface you want to use.
     # "intel_realsense" is the default and recommended option.
     # "opencv" is a fallback option that uses OpenCV to access the cameras.
-    camera_interface: Literal["intel_realsense", "opencv"] = "intel_realsense"
+    camera_interface: str = "intel_realsense"
 
-    leader_arms: dict[str, MotorsBusConfig] = field(
-        default_factory=lambda: {
+    leader_arms: dict[str, MotorsBusConfig] = field(init=False)  # Initialized later
+
+    follower_arms: dict[str, MotorsBusConfig] = field(init=False)  # Initialized later
+
+    cameras: dict[str, CameraConfig] = field(init=False)  # Initialized later
+
+    mock: bool = False
+
+    def __post_init__(self):
+        self.leader_arms = {
             "main": TrossenArmDriverConfig(
                 # wxai
                 ip="192.168.1.2",
                 model="V0_LEADER",
+                min_time_to_move_multiplier=self.min_time_to_move_multiplier,
             ),
         }
-    )
 
-    follower_arms: dict[str, MotorsBusConfig] = field(
-        default_factory=lambda: {
+        self.follower_arms = {
             "main": TrossenArmDriverConfig(
                 ip="192.168.1.3",
                 model="V0_FOLLOWER",
+                min_time_to_move_multiplier=self.min_time_to_move_multiplier,
             ),
         }
-    )
 
-    if camera_interface == "opencv":
-        cameras: dict[str, CameraConfig] = field(
-            default_factory=lambda: {
+        if self.camera_interface == "opencv":
+            self.cameras: dict[str, CameraConfig] = {
                 "cam_main": OpenCVCameraConfig(
                     camera_index=26,
                     fps=30,
@@ -796,13 +821,12 @@ class TrossenAISoloRobotConfig(ManipulatorRobotConfig):
                     height=480,
                 ),
             }
-        )
-    elif camera_interface == "intel_realsense":
-        # Troubleshooting: If one of your IntelRealSense cameras freeze during
-        # data recording due to bandwidth limit, you might need to plug the camera
-        # on another USB hub or PCIe card.
-        cameras: dict[str, CameraConfig] = field(
-            default_factory=lambda: {
+
+        elif self.camera_interface == "intel_realsense":
+            # Troubleshooting: If one of your IntelRealSense cameras freeze during
+            # data recording due to bandwidth limit, you might need to plug the camera
+            # on another USB hub or PCIe card.
+            self.cameras: dict[str, CameraConfig] = {
                 "cam_main": IntelRealSenseCameraConfig(
                     serial_number=130322270184,
                     fps=30,
@@ -816,13 +840,10 @@ class TrossenAISoloRobotConfig(ManipulatorRobotConfig):
                     height=480,
                 ),
             }
-        )
-    else:
-        raise ValueError(
-            f"Unknown camera interface: {camera_interface}. Supported values are 'opencv' and 'intel_realsense'."
-        )
-
-    mock: bool = False
+        else:
+            raise ValueError(
+                f"Unknown camera interface: {self.camera_interface}. Supported values are 'opencv' and 'intel_realsense'."
+            )
 
 
 @RobotConfig.register_subclass("trossen_ai_mobile")
@@ -838,51 +859,66 @@ class TrossenAIMobileRobotConfig(RobotConfig):
     # Also, everything is expected to work safely out-of-the-box, but we highly advise to
     # first try to teleoperate the grippers only (by commenting out the rest of the motors in this yaml),
     # then to gradually add more motors (by uncommenting), until you can teleoperate both arms fully
-    max_relative_target: int | None = 5
+    max_relative_target: float | None = 5.0
 
     # Gain applied to external efforts sensed on the follower arm and transmitted to the leader arm.
     # This enables the user to feel external forces (e.g., contact with objects) through force feedback.
     # A value of 0.0 disables force feedback. A good starting value for a responsive experience is 0.1.
     force_feedback_gain: float = 0.0
 
+    # Multiplier for computing minimum time (in seconds) for the arm to reach a target position.
+    # The final goal time is computed as: min_time_to_move = multiplier / fps.
+    # A smaller multiplier results in faster (but potentially jerky) motion.
+    # A larger multiplier results in smoother motion but with increased lag.
+    # A recommended starting value is 3.0.
+    min_time_to_move_multiplier: float = 3.0
+
     # Set this according to the camera interface you want to use.
     # "intel_realsense" is the default and recommended option.
     # "opencv" is a fallback option that uses OpenCV to access the cameras.
-    camera_interface: Literal["intel_realsense", "opencv"] = "intel_realsense"
+    camera_interface: str = "intel_realsense"
 
     enable_motor_torque: bool = False
 
-    leader_arms: dict[str, MotorsBusConfig] = field(
-        default_factory=lambda: {
+    leader_arms: dict[str, MotorsBusConfig] = field(init=False)  # Initialized later
+
+    follower_arms: dict[str, MotorsBusConfig] = field(init=False)  # Initialized later
+
+    cameras: dict[str, CameraConfig] = field(init=False)  # Initialized later
+
+    mock: bool = False
+
+    def __post_init__(self):
+        self.leader_arms = {
             "left": TrossenArmDriverConfig(
                 # wxai
                 ip="192.168.1.3",
                 model="V0_LEADER",
+                min_time_to_move_multiplier=self.min_time_to_move_multiplier,
             ),
             "right": TrossenArmDriverConfig(
                 # wxai
                 ip="192.168.1.2",
                 model="V0_LEADER",
+                min_time_to_move_multiplier=self.min_time_to_move_multiplier,
             ),
         }
-    )
 
-    follower_arms: dict[str, MotorsBusConfig] = field(
-        default_factory=lambda: {
+        self.follower_arms = {
             "left": TrossenArmDriverConfig(
                 ip="192.168.1.5",
                 model="V0_FOLLOWER",
+                min_time_to_move_multiplier=self.min_time_to_move_multiplier,
             ),
             "right": TrossenArmDriverConfig(
                 ip="192.168.1.4",
                 model="V0_FOLLOWER",
+                min_time_to_move_multiplier=self.min_time_to_move_multiplier,
             ),
         }
-    )
 
-    if camera_interface == "opencv":
-        cameras: dict[str, CameraConfig] = field(
-            default_factory=lambda: {
+        if self.camera_interface == "opencv":
+            self.cameras: dict[str, CameraConfig] = {
                 "cam_high": OpenCVCameraConfig(
                     camera_index=26,
                     fps=30,
@@ -902,13 +938,11 @@ class TrossenAIMobileRobotConfig(RobotConfig):
                     height=480,
                 ),
             }
-        )
-    elif camera_interface == "intel_realsense":
-        # Troubleshooting: If one of your IntelRealSense cameras freeze during
-        # data recording due to bandwidth limit, you might need to plug the camera
-        # on another USB hub or PCIe card.
-        cameras: dict[str, CameraConfig] = field(
-            default_factory=lambda: {
+        elif self.camera_interface == "intel_realsense":
+            # Troubleshooting: If one of your IntelRealSense cameras freeze during
+            # data recording due to bandwidth limit, you might need to plug the camera
+            # on another USB hub or PCIe card.
+            self.cameras: dict[str, CameraConfig] = {
                 "cam_high": IntelRealSenseCameraConfig(
                     serial_number=130322270184,
                     fps=30,
@@ -928,10 +962,7 @@ class TrossenAIMobileRobotConfig(RobotConfig):
                     height=480,
                 ),
             }
-        )
-    else:
-        raise ValueError(
-            f"Unknown camera interface: {camera_interface}. Supported values are 'opencv' and 'intel_realsense'."
-        )
-
-    mock: bool = False
+        else:
+            raise ValueError(
+                f"Unknown camera interface: {self.camera_interface}. Supported values are 'opencv' and 'intel_realsense'."
+            )
