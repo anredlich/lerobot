@@ -31,22 +31,34 @@ from lerobot.configs.types import FeatureType
 
 def main():
     # Create a directory to store the training checkpoint.
-    output_directory = Path("outputs/train/example_aloha_act5")
+    #output_directory = Path("outputs/train/example_aloha_act5")
+    #output_directory = Path("lerobot/scripts/outputs/train/example_aloha_act6")
+    output_directory = Path("lerobot/scripts/outputs/train/example_aloha_act7")
+    output_directory = Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act5")
     output_directory.mkdir(parents=True, exist_ok=True)
+
+    repo_id = "lerobot/aloha_sim_transfer_cube_human"
+    root = None
+    repo_id = "ANRedlich/eval_act_trossen_ai_stationary_test_01"
+    root = "lerobot/scripts/dataset/eval3"
+    repo_id = "ANRedlich/eval_act_trossen_ai_stationary_test_04"
+    root = "lerobot/scripts/dataset/eval4"
+    #repo_id="ANRedlich/trossen_ai_stationary_test_07"
+    #root="lerobot/scripts/dataset/experiment5"
 
     # # Select your device
     device = torch.device("cuda")
 
     # Number of offline training steps (we'll only do offline training for this example.)
     # Adjust as you prefer. 5000 steps are needed to get something worth evaluating.
-    training_steps = 5000
+    training_steps = 5000 #5000
     log_freq = 1
 
     # When starting from scratch (i.e. not from a pretrained policy), we need to specify 2 things before
     # creating the policy:
     #   - input/output shapes: to properly size the policy
     #   - dataset stats: for normalization and denormalization of input/outputs
-    dataset_metadata = LeRobotDatasetMetadata("lerobot/aloha_sim_transfer_cube_human")
+    dataset_metadata = LeRobotDatasetMetadata(repo_id=repo_id,root=root) #"lerobot/aloha_sim_transfer_cube_human"
     features = dataset_to_policy_features(dataset_metadata.features)
     output_features = {key: ft for key, ft in features.items() if ft.type is FeatureType.ACTION}
     input_features = {key: ft for key, ft in features.items() if key not in output_features}
@@ -81,14 +93,14 @@ def main():
     # }
 
     # We can then instantiate the dataset with these delta_timestamps configuration.
-    dataset = LeRobotDataset("lerobot/aloha_sim_transfer_cube_human", delta_timestamps=delta_timestamps)
+    dataset = LeRobotDataset(repo_id=repo_id,root=root, delta_timestamps=delta_timestamps) #"lerobot/aloha_sim_transfer_cube_human"
 
     # Then we create our optimizer and dataloader for offline training.
     optimizer = torch.optim.Adam(policy.parameters(), lr=1e-4)
     dataloader = torch.utils.data.DataLoader(
         dataset,
         num_workers=4,
-        batch_size=64,
+        batch_size=8, #64,
         shuffle=True,
         pin_memory=device.type != "cpu",
         drop_last=True,

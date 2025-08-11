@@ -172,6 +172,7 @@ from lerobot.common.utils.utils import get_safe_torch_device #anr added
 from lerobot.common.policies.pretrained import PreTrainedPolicy
 from lerobot.configs import parser
 import gym_aloha
+from gym_aloha.tasks.sim import BOX_POSE
 import gymnasium as gym
 import dm_env
 import torch
@@ -192,13 +193,15 @@ def record_sim_episode(
     policy: PreTrainedPolicy = None,
     fps: int | None = None,
     single_task: str | None = None,
+    episode = None,
 ):
     # TODO(rcadene): Add option to record logs
     #if not robot.is_connected:
     #    robot.connect()
 
     device = "cuda" #anr get this from policy or policy config
-    policy.reset()
+    if policy is not None:
+        policy.reset()
 
     if events is None:
         events = {"exit_early": False}
@@ -215,10 +218,18 @@ def record_sim_episode(
     if dataset is not None and fps is not None and dataset.fps != fps:
         raise ValueError(f"The dataset fps should be equal to requested fps ({dataset['fps']} != {fps}).")
 
-    numpy_observation, info = env.reset()
+    if policy is None:
+        ecount=0
+         # make sure the sim_env has the same object configurations as ee_sim_env
+        BOX_POSE[0] = episode[ecount].observation["env_state"].copy()
+        ecount+=1
+        numpy_observation, info = env.reset(seed=None,options='do_not_reset_BOX_POSE')
+    else:
+        numpy_observation, info = env.reset()
     if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube_ee':
         ts=dm_env.TimeStep(step_type=dm_env.StepType.FIRST,reward=None,discount=None,observation=info['raw_obs'])
         print(f"cube position={ts.observation['env_state'][:3]}")
+        episode.append(ts)
 
     #timestamp = 0
     #start_episode_t = time.perf_counter()
@@ -226,8 +237,8 @@ def record_sim_episode(
     for step in range(env._max_episode_steps):
         #start_loop_t = time.perf_counter()
 
-        if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube':
-            numpy_observation["agent_pos"] = numpy.delete(numpy_observation["agent_pos"], [7, 15])
+        #if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube':
+        #    numpy_observation["agent_pos"] = numpy.delete(numpy_observation["agent_pos"], [7, 15])
 
         #convert from gym-aloha convention:
         state = torch.from_numpy(numpy_observation["agent_pos"]).to(torch.float32)
@@ -242,75 +253,40 @@ def record_sim_episode(
              **{f"observation.images.{cam}": image[i] for i, cam in enumerate(cam_list)}
         }
 
-        # # Convert to float32 with image from channel first in [0,255]
-        # # to channel last in [0,1]
-        # state = state.to(torch.float32)
-        # for i, cam in enumerate(cam_list):
-        #     image[i] = image[i].to(torch.float32) / 255
-        #     image[i] = image[i].permute(2, 0, 1)
-
-        # # Send data tensors from CPU to GPU
-        # state = state.to(device, non_blocking=True)
-        # for i, cam in enumerate(cam_list):
-        #     image[i] = image[i].to(device, non_blocking=True)
-
-        # # Add extra (empty) batch dimension, required to forward the policy
-        # state = state.unsqueeze(0)
-        # for i, cam in enumerate(cam_list):
-        #     image[i] = image[i].unsqueeze(0)
-
-        # # Create the policy input dictionary
-        # observation = {
-        #     "observation.state": state,
-        #      **{f"observation.images.{cam}": image[i] for i, cam in enumerate(cam_list)}
-        # }
-
-        # if policy is not None:
-        #     pred_action = predict_action(
-        #         observation, policy, get_safe_torch_device(policy.config.device), policy.config.use_amp
-        #     )
-        #     # Action can eventually be clipped using `max_relative_target`,
-        #     # so action actually sent is saved in the dataset.
-        #     action = robot.send_action(pred_action)
-        #     action = {"action": action}
-
-        # if dataset is not None:
-        #     action = {"action": action}
-        #     frame = {**observation, **action, "task": single_task}
-        #     dataset.add_frame(frame)
-
         if display_cameras and not is_headless():
             image_keys = [key for key in data_observation if "image" in key]
             for key in image_keys:
                 cv2.imshow(key, cv2.cvtColor(data_observation[key].numpy(), cv2.COLOR_RGB2BGR))
             cv2.waitKey(1)
 
-        if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube_ee':
-            action = policy(ts)
-        # elif 'trossen' in env.unwrapped.task:
-        #     action = predict_action(
-        #        data_observation, policy, get_safe_torch_device(policy.config.device), policy.config.use_amp
-        #     )
-        else:
-            #action = policy.select_action(observation)
-            action = predict_action(
-               data_observation, policy, get_safe_torch_device(policy.config.device), policy.config.use_amp
-            )
+        if policy is not None:
+            if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube_ee':
+                action = policy(ts)
+            else:
+                #action = policy.select_action(observation)
+                action = predict_action(
+                data_observation, policy, get_safe_torch_device(policy.config.device), policy.config.use_amp
+                )
 
-        # Prepare the action for the environment
-        if isinstance(action, torch.Tensor):
-            numpy_action = action.squeeze(0).to("cpu").numpy()
+            # Prepare the action for the environment
+            if isinstance(action, torch.Tensor):
+                numpy_action = action.squeeze(0).to("cpu").numpy()
+            else:
+                numpy_action = action
         else:
-            numpy_action = action
+            numpy_action=episode[ecount].observation["qpos"].astype(numpy.float32)
+            if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube':
+                numpy_action = numpy.delete(numpy_action, [7, 15]) #anr this stays because ee qpos is size 16
+            ecount+=1
 
         if dataset is not None and env.unwrapped.task == 'trossen_ai_stationary_transfer_cube':
             action = {"action": numpy_action}
             frame = {**data_observation, **action, "task": single_task}
             dataset.add_frame(frame)
 
-        if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube':
-            temp_array = numpy.insert(numpy_action, 7, numpy_action[6])
-            numpy_action = numpy.insert(temp_array, 15, numpy_action[13])
+        #if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube':
+        #    temp_array = numpy.insert(numpy_action, 7, numpy_action[6])
+        #    numpy_action = numpy.insert(temp_array, 15, numpy_action[13])
 
         #if teleoperate:
         #    observation, action = robot.teleop_step(record_data=True)
@@ -322,9 +298,11 @@ def record_sim_episode(
                 ts=dm_env.TimeStep(dm_env.StepType.LAST, reward, 1.0, observation=info['raw_obs'])
             else:
                 ts=dm_env.TimeStep(dm_env.StepType.MID, reward, 1.0, observation=info['raw_obs'])
+            episode.append(ts)
 
-        if terminated:
-            return
+        if not env.unwrapped.task == 'trossen_ai_stationary_transfer_cube_ee':    
+            if terminated:
+                return
         
         #if fps is not None:
         #    dt_s = time.perf_counter() - start_loop_t
@@ -468,12 +446,23 @@ def record_sim(
     #if has_method(robot, "teleop_safety_stop"):
     #    robot.teleop_safety_stop()
 
+    if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube_ee':
+        #companion joint environment to the end effector environment
+        task="gym_aloha/TrossenAIStationaryTransferCube-v0"
+        env2 = gym.make(
+            task,
+            obs_type="pixels_agent_pos",
+            max_episode_steps=500, #400
+            #render_mode="human"  # This enables the built-in Gymnasium viewer #anr default
+        )
+
     recorded_episodes = 0
     while True:
         if recorded_episodes >= cfg.num_episodes:
             break
 
-        log_say(f"Recording episode {dataset.num_episodes}", cfg.play_sounds)
+        #log_say(f"Recording episode {dataset.num_episodes}", cfg.play_sounds)
+        episode=[]
         record_sim_episode(
             robot=robot,
             dataset=dataset,
@@ -484,7 +473,22 @@ def record_sim(
             policy=policy,
             fps=cfg.fps,
             single_task=cfg.single_task,
+            episode=episode,
         )
+
+        if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube_ee' and len(episode)>0:
+            record_sim_episode(
+                robot=robot,
+                dataset=dataset,
+                env=env2,
+                events=events,
+                episode_time_s=cfg.episode_time_s,
+                display_cameras=cfg.display_cameras,
+                policy=None,
+                fps=cfg.fps,
+                single_task=cfg.single_task,
+                episode=episode,
+            )
 
         # Execute a few seconds without recording to give time to manually reset the environment
         # Current code logic doesn't allow to teleoperate during this time.
@@ -503,7 +507,7 @@ def record_sim(
         #    dataset.clear_episode_buffer()
         #    continue
 
-        if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube':
+        if dataset.episode_buffer['size']>0: #env.unwrapped.task == 'trossen_ai_stationary_transfer_cube':
             dataset.save_episode()
         recorded_episodes += 1
 
