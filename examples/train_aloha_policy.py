@@ -27,22 +27,22 @@ from lerobot.common.datasets.utils import dataset_to_policy_features
 from lerobot.common.policies.act.configuration_act import ACTConfig
 from lerobot.common.policies.act.modeling_act import ACTPolicy
 from lerobot.configs.types import FeatureType
-
+from lerobot.common.robot_devices.robots.utils import normalize_batch
 
 def main():
     # Create a directory to store the training checkpoint.
     #output_directory = Path("outputs/train/example_aloha_act5")
     #output_directory = Path("lerobot/scripts/outputs/train/example_aloha_act6")
     output_directory = Path("lerobot/scripts/outputs/train/example_aloha_act7")
-    output_directory = Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act5")
+    #output_directory = Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act_ex1")
     output_directory.mkdir(parents=True, exist_ok=True)
 
     repo_id = "lerobot/aloha_sim_transfer_cube_human"
     root = None
-    repo_id = "ANRedlich/eval_act_trossen_ai_stationary_test_01"
-    root = "lerobot/scripts/dataset/eval3"
-    repo_id = "ANRedlich/eval_act_trossen_ai_stationary_test_04"
-    root = "lerobot/scripts/dataset/eval4"
+    #repo_id = "ANRedlich/eval_act_trossen_ai_stationary_test_01"
+    #root = "lerobot/scripts/dataset/eval3"
+    #repo_id = "ANRedlich/eval_act_trossen_ai_stationary_test_06" #BIG DATASET
+    #root = "lerobot/scripts/dataset/eval6" #BIG DATASET
     #repo_id="ANRedlich/trossen_ai_stationary_test_07"
     #root="lerobot/scripts/dataset/experiment5"
 
@@ -51,7 +51,7 @@ def main():
 
     # Number of offline training steps (we'll only do offline training for this example.)
     # Adjust as you prefer. 5000 steps are needed to get something worth evaluating.
-    training_steps = 5000 #5000
+    training_steps = 5000
     log_freq = 1
 
     # When starting from scratch (i.e. not from a pretrained policy), we need to specify 2 things before
@@ -65,7 +65,7 @@ def main():
 
     # Policies are initialized with a configuration class, in this case `ActConfig`. For this example,
     # we'll just use the defaults and so no arguments other than input/output features need to be passed.
-    cfg = ACTConfig(input_features=input_features, output_features=output_features)
+    cfg = ACTConfig(input_features=input_features, output_features=output_features, n_action_steps=10, chunk_size=10, normalize_data=False)
 
     # We can now instantiate our policy with this config and the dataset stats.
     policy = ACTPolicy(cfg, dataset_stats=dataset_metadata.stats)
@@ -100,7 +100,7 @@ def main():
     dataloader = torch.utils.data.DataLoader(
         dataset,
         num_workers=4,
-        batch_size=8, #64,
+        batch_size=64, #8 needed for trossen_staitionary_ai because of size
         shuffle=True,
         pin_memory=device.type != "cpu",
         drop_last=True,
@@ -111,6 +111,8 @@ def main():
     done = False
     while not done:
         for batch in dataloader:
+            if policy.config.normalize_data:
+                batch=normalize_batch(batch)
             batch = {k: (v.to(device) if isinstance(v, torch.Tensor) else v) for k, v in batch.items()}
             loss, _ = policy.forward(batch)
             loss.backward()

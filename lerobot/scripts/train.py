@@ -51,7 +51,7 @@ from lerobot.common.utils.wandb_utils import WandBLogger
 from lerobot.configs import parser
 from lerobot.configs.train import TrainPipelineConfig
 from lerobot.scripts.eval import eval_policy
-
+from lerobot.common.robot_devices.robots.utils import normalize_batch
 
 def update_policy(
     train_metrics: MetricsTracker,
@@ -204,6 +204,9 @@ def train(cfg: TrainPipelineConfig):
         start_time = time.perf_counter()
         batch = next(dl_iter)
         train_tracker.dataloading_s = time.perf_counter() - start_time
+
+        if policy.config.normalize_data:
+            batch=normalize_batch(batch)
 
         for key in batch:
             if isinstance(batch[key], torch.Tensor):

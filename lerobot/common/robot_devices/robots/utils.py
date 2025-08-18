@@ -97,3 +97,85 @@ def make_robot_from_config(config: RobotConfig):
 def make_robot(robot_type: str, **kwargs) -> Robot:
     config = make_robot_config(robot_type, **kwargs)
     return make_robot_from_config(config)
+
+#############################################################################################
+
+import torch
+
+TROSSEN_AI_STATIONARY_JOINT_MIN = torch.tensor([
+    -3.05433, 0.0, 0.0, -1.5708, -1.5708, -3.14159, 0.0,
+    -3.05433, 0.0, 0.0, -1.5708, -1.5708, -3.14159, 0.0,
+], dtype=torch.float32)
+
+TROSSEN_AI_STATIONARY_JOINT_MAX = torch.tensor([
+    3.05433, 3.14159, 2.35619, 1.5708, 1.5708, 3.14159, 0.044,
+    3.05433, 3.14159, 2.35619, 1.5708, 1.5708, 3.14159, 0.044,
+], dtype=torch.float32)
+
+TROSSEN_AI_STATIONARY_GRIPPER_INDICES = [6,13]
+
+def normalize_batch(batch: dict):
+    if 'Trossen AI Stationary' not in batch['task'][0]:
+        return batch
+
+    batch = batch.copy()  # Shallow copy of dict
+    batch['action'] = batch['action'].clone()  # Deep copy of tensor
+    batch['observation.state'] = batch['observation.state'].clone()  # Deep copy of tensor
+
+    #normalize the gripper actions to 0-1
+    for idx in TROSSEN_AI_STATIONARY_GRIPPER_INDICES:
+        batch['action'][:, :, idx] = (
+            (batch['action'][:, :, idx] - TROSSEN_AI_STATIONARY_JOINT_MIN[idx]) / 
+            (TROSSEN_AI_STATIONARY_JOINT_MAX[idx] - TROSSEN_AI_STATIONARY_JOINT_MIN[idx])
+        )
+
+    #normalize the gripper observation state to 0-1
+    for idx in TROSSEN_AI_STATIONARY_GRIPPER_INDICES:
+        batch['observation.state'][:, idx] = (
+            (batch['observation.state'][:, idx] - TROSSEN_AI_STATIONARY_JOINT_MIN[idx]) / 
+            (TROSSEN_AI_STATIONARY_JOINT_MAX[idx] - TROSSEN_AI_STATIONARY_JOINT_MIN[idx])
+        )
+
+    return batch
+
+def normalize_state(state: dict):
+    #if 'Trossen AI Stationary' not in batch['task'][0]:
+    #    return batch
+
+    # batch = batch.copy()  # Shallow copy of dict
+    # batch['action'] = batch['action'].clone()  # Deep copy of tensor
+    # batch['observation.state'] = batch['observation.state'].clone()  # Deep copy of tensor
+
+    #normalize the gripper observation state to 0-1
+    if state.ndim==1:
+        for idx in TROSSEN_AI_STATIONARY_GRIPPER_INDICES:
+            state[idx] = (
+                (state[idx] - TROSSEN_AI_STATIONARY_JOINT_MIN[idx]) / 
+                (TROSSEN_AI_STATIONARY_JOINT_MAX[idx] - TROSSEN_AI_STATIONARY_JOINT_MIN[idx])
+            )
+    elif state.ndim==2:
+        for idx in TROSSEN_AI_STATIONARY_GRIPPER_INDICES:
+            state[:,idx] = (
+                (state[:,idx] - TROSSEN_AI_STATIONARY_JOINT_MIN[idx]) / 
+                (TROSSEN_AI_STATIONARY_JOINT_MAX[idx] - TROSSEN_AI_STATIONARY_JOINT_MIN[idx])
+            )
+
+    return state
+
+def unnormalize_numpy_action(action: dict):
+    #if 'Trossen AI Stationary' not in batch['task'][0]:
+    #    return batch
+
+    # batch = batch.copy()  # Shallow copy of dict
+    # batch['action'] = batch['action'].clone()  # Deep copy of tensor
+    # batch['observation.state'] = batch['observation.state'].clone()  # Deep copy of tensor
+
+    #normalize the gripper observation state to 0-1
+    if action.ndim==1:
+        for idx in TROSSEN_AI_STATIONARY_GRIPPER_INDICES:
+            action[idx] = TROSSEN_AI_STATIONARY_JOINT_MIN[idx].numpy() + action[idx] * (TROSSEN_AI_STATIONARY_JOINT_MAX[idx].numpy() - TROSSEN_AI_STATIONARY_JOINT_MIN[idx].numpy())
+    elif action.ndim==2:
+        for idx in TROSSEN_AI_STATIONARY_GRIPPER_INDICES:
+            action[:,idx] = TROSSEN_AI_STATIONARY_JOINT_MIN[idx].numpy() + action[:,idx] * (TROSSEN_AI_STATIONARY_JOINT_MAX[idx].numpy() - TROSSEN_AI_STATIONARY_JOINT_MIN[idx].numpy())
+        
+    return action

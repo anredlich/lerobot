@@ -36,6 +36,7 @@ import dm_env
 #from lerobot.common.policies.diffusion.modeling_diffusion import DiffusionPolicy
 from lerobot.common.policies.act.modeling_act import ACTPolicy
 from lerobot.common.policies.scripted_policy import PickAndTransferPolicy
+from lerobot.common.robot_devices.robots.utils import normalize_state, unnormalize_numpy_action
 
 # Create a directory to store the video of the evaluation
 output_directory = Path("outputs/eval/example_aloha_act2") #anr example_pusht_diffusion
@@ -69,9 +70,11 @@ if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube':
     pretrained_policy_path = Path("lerobot/scripts/outputs/train/act_trossen_ai_stationary_test_07_01/checkpoints/last/pretrained_model") #from training real robot
     pretrained_policy_path = Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act1") #from training simulated robot
     pretrained_policy_path=Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act2/checkpoints/last/pretrained_model") #from train.py
-    pretrained_policy_path=Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act6/checkpoints/last/pretrained_model") #from train.py on BIG DATASET
+    pretrained_policy_path=Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act6/checkpoints/last/pretrained_model") #from train.py on BIG DATASET seed=1000 -> step=460
     #pretrained_policy_path = Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act3")
-    #pretrained_policy_path = Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act5")
+    #pretrained_policy_path = Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act7") #train_aloha_policy with normalize_data
+    #pretrained_policy_path = Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act7/checkpoints/008000/pretrained_model") #normalize_data
+    #pretrained_policy_path = Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act8/checkpoints/last/pretrained_model") #normalize_data
     policy = ACTPolicy.from_pretrained(pretrained_policy_path)
 if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube_ee':
     inject_noise = False
@@ -81,8 +84,9 @@ elif env.unwrapped.task == 'transfer_cube':
     pretrained_policy_path = "lerobot/act_aloha_sim_transfer_cube_human" #seed=41 -> step=266,270
     #pretrained_policy_path = Path("outputs/train/act_aloha_transfer/checkpoints/last/pretrained_model") #from train.py seed=41 -> step=264,266
     #pretrained_policy_path = Path("lerobot/scripts/outputs/train/example_aloha_act2") #from train_aloha_policy seed=42 -> step=293
-    pretrained_policy_path = Path("lerobot/scripts/outputs/train/example_aloha_act6") #from train_aloha_policy seed=42 -> step=293
-    pretrained_policy_path = Path("lerobot/scripts/outputs/train/act_aloha_transfer6/checkpoints/003000/pretrained_model")
+    #pretrained_policy_path = Path("lerobot/scripts/outputs/train/example_aloha_act6") #from train_aloha_policy seed=42 -> step=293
+    pretrained_policy_path = Path("lerobot/scripts/outputs/train/example_aloha_act7") #from train_aloha_policy
+    #pretrained_policy_path = Path("lerobot/scripts/outputs/train/act_aloha_transfer6/checkpoints/003000/pretrained_model")
     policy = ACTPolicy.from_pretrained(pretrained_policy_path)
 
 #policy = DiffusionPolicy.from_pretrained(pretrained_policy_path)
@@ -153,6 +157,9 @@ while not done:
         image[i] = image[i].to(torch.float32) / 255
         image[i] = image[i].permute(2, 0, 1)
 
+    if policy.config.normalize_data:
+        state = normalize_state(state)
+
     # Send data tensors from CPU to GPU
     state = state.to(device, non_blocking=True)
     for i, cam in enumerate(cam_list):
@@ -182,6 +189,9 @@ while not done:
         numpy_action = action.squeeze(0).to("cpu").numpy()
     else:
         numpy_action = action
+
+    if policy.config.normalize_data:
+        numpy_action = unnormalize_numpy_action(numpy_action)
 
     #if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube':
     #    temp_array = numpy.insert(numpy_action, 7, numpy_action[6])

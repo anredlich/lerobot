@@ -79,7 +79,7 @@ from lerobot.common.utils.utils import (
 )
 from lerobot.configs import parser
 from lerobot.configs.eval import EvalPipelineConfig
-
+from lerobot.common.robot_devices.robots.utils import normalize_state, unnormalize_numpy_action
 
 def rollout(
     env: gym.vector.VectorEnv,
@@ -151,6 +151,9 @@ def rollout(
         if return_observations:
             all_observations.append(deepcopy(observation))
 
+        if policy.config.normalize_data:
+            observation['observation.state'] = normalize_state(observation['observation.state'])
+
         observation = {
             key: observation[key].to(device, non_blocking=device.type == "cuda") for key in observation
         }
@@ -161,6 +164,9 @@ def rollout(
         # Convert to CPU / numpy.
         action = action.to("cpu").numpy()
         assert action.ndim == 2, "Action dimensions should be (batch, action_dim)"
+
+        if policy.config.normalize_data:
+            action = unnormalize_numpy_action(action)
 
         # Apply the next action.
         observation, reward, terminated, truncated, info = env.step(action)
