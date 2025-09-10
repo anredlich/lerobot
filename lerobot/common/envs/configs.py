@@ -45,6 +45,9 @@ class AlohaEnv(EnvConfig):
     episode_length: int = 400
     obs_type: str = "pixels_agent_pos"
     render_mode: str = "rgb_array"
+    box_size: list[float] | None = None
+    box_color: list[float] | None = None
+    tabletop: str | None = None
     features: dict[str, PolicyFeature] = field(
         default_factory=lambda: {
             "action": PolicyFeature(type=FeatureType.ACTION, shape=(14,)),
@@ -72,6 +75,9 @@ class AlohaEnv(EnvConfig):
             "obs_type": self.obs_type,
             "render_mode": self.render_mode,
             "max_episode_steps": self.episode_length,
+            "box_size": self.box_size,
+            "box_color": self.box_color,
+            "tabletop": self.tabletop,
         }
 
 

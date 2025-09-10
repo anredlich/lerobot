@@ -25,6 +25,9 @@ from pathlib import Path
 import numpy as np
 import torch
 
+from gtts import gTTS
+import pygame
+import tempfile
 
 def none_or_int(value):
     if value == "None":
@@ -167,6 +170,27 @@ def print_cuda_memory_usage():
 def capture_timestamp_utc():
     return datetime.now(timezone.utc)
 
+def say_gtts(text, blocking=False, lang='en'):
+    """Uses Google Text-to-Speech"""
+    try:
+        tts = gTTS(text=text, lang=lang, slow=False)
+        
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as tmp_file:
+            tts.save(tmp_file.name)
+            
+            pygame.mixer.init()
+            pygame.mixer.music.load(tmp_file.name)
+            pygame.time.wait(1000)
+            pygame.mixer.music.play()
+            
+            if blocking:
+                while pygame.mixer.music.get_busy():
+                    pygame.time.wait(100)
+            
+            os.unlink(tmp_file.name)
+            
+    except Exception as e:
+        print(f"Google TTS failed: {e}")
 
 def say(text, blocking=False):
     system = platform.system()
@@ -200,7 +224,7 @@ def log_say(text, play_sounds, blocking=False):
     logging.info(text)
 
     if play_sounds:
-        say(text, blocking)
+        say_gtts(text, blocking) #anr better text to voice
 
 
 def get_channel_first_image_shape(image_shape: tuple) -> tuple:

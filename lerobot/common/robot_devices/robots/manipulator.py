@@ -236,6 +236,13 @@ class ManipulatorRobot:
             for arms in self.follower_arms:
                 self.follower_arms[arms].write("Torque_Enable", 1)
 
+    def set_home_pose(self,home_pose):
+        if self.robot_type in ["trossen_ai_stationary", "trossen_ai_solo"]:
+            for arms in self.leader_arms:
+                self.leader_arms[arms].set_home_pose(home_pose)
+            for arms in self.follower_arms:
+                self.follower_arms[arms].set_home_pose(home_pose)
+
     def connect(self):
         if self.is_connected:
             raise RobotDeviceAlreadyConnectedError(

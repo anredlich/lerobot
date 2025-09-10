@@ -32,6 +32,7 @@ from dm_env import TimeStep
 import matplotlib.pyplot as plt
 import numpy as np
 from pyquaternion import Quaternion
+from typing import Any
 
 # from constants import SIM_TASK_CONFIGS      #trossen_arm_mujoco. anr
 # from ee_sim_env import TransferCubeEETask   #trossen_arm_mujoco. anr
@@ -49,11 +50,12 @@ class BasePolicy:
     :param inject_noise: Whether to inject noise into actions for robustness testing, defaults to ``False``.
     """
 
-    def __init__(self, inject_noise: bool = False):
+    def __init__(self, inject_noise: bool = False, box_size: list[float] | None = None): #anr added box_size
         self.inject_noise = inject_noise
         self.step_count = 0
         self.left_trajectory: list[dict] = []
         self.right_trajectory: list[dict] = []
+        self.box_size=box_size
 
     def generate_trajectory(self, ts_first: TimeStep):
         """
@@ -68,6 +70,7 @@ class BasePolicy:
         self.step_count = 0
         self.left_trajectory = []
         self.right_trajectory = []
+        #self.options=options
 
     @staticmethod
     def interpolate(
@@ -157,6 +160,12 @@ class PickAndTransferPolicy(BasePolicy):
             axis=[0.0, 1.0, 0.0], degrees=-45
         )
 
+        gripper_object_size=0.012 #default based on box_size=[0.0125,0.0125,0.0125]
+        if isinstance(self.box_size, list) and len(self.box_size) == 3: #anr added box_size
+            gripper_object_size=self.box_size[0]-0.0005
+
+        dz=-0.015 #anr was dz=0 this is a fudge because right arm seems to shoot higher than target z
+
         meet_left_quat = Quaternion(axis=[1.0, 0.0, 0.0], degrees=90)
 
         meet_xyz = np.array([0.0, 0.0, 0.3])
@@ -190,25 +199,25 @@ class PickAndTransferPolicy(BasePolicy):
                 "t": 460,
                 "xyz": meet_xyz + np.array([0, 0, 0]),
                 "quat": meet_left_quat.elements,
-                "gripper": 0.012,
+                "gripper": gripper_object_size,
             },  # close gripper
             {
                 "t": 520,
                 "xyz": meet_xyz + np.array([0, 0, 0]),
                 "quat": meet_left_quat.elements,
-                "gripper": 0.012,
+                "gripper": gripper_object_size,
             },  # Stay for a while
             {
                 "t": 550,
                 "xyz": meet_xyz + np.array([-0.2, 0, 0]),
                 "quat": meet_left_quat.elements,
-                "gripper": 0.012,
+                "gripper": gripper_object_size,
             },  # move left
             {
                 "t": 600,
                 "xyz": meet_xyz + np.array([-0.2, 0, 0]),
                 "quat": np.array([1, 0, 0, 0]),
-                "gripper": 0.012,
+                "gripper": gripper_object_size,
             },  # stay
         ]
 
@@ -259,37 +268,37 @@ class PickAndTransferPolicy(BasePolicy):
                 "t": 240,
                 "xyz": box_xyz + np.array([0, 0, 0]),
                 "quat": gripper_pick_quat.elements,
-                "gripper": 0.012,
+                "gripper": gripper_object_size,
             },  # close gripper
             {
                 "t": 280,
-                "xyz": box_xyz + np.array([0, 0, 0]),
+                "xyz": box_xyz + np.array([0, 0, dz]), #0]),
                 "quat": gripper_pick_quat.elements,
-                "gripper": 0.012,
+                "gripper": gripper_object_size,
             },  # Stay there for a while
             {
                 "t": 340,
-                "xyz": meet_xyz + np.array([0.1, 0, 0]),
+                "xyz": meet_xyz + np.array([0.1, 0, dz]), # 0]),
                 "quat": gripper_pick_quat.elements,
-                "gripper": 0.012,
+                "gripper": gripper_object_size,
             },  # approach meet position
             {
                 "t": 360,
-                "xyz": meet_xyz + np.array([0.05, 0, 0]),
+                "xyz": meet_xyz + np.array([0.05, 0, dz]), #0]),
                 "quat": gripper_pick_quat.elements,
-                "gripper": 0.012,
+                "gripper": gripper_object_size,
             },  # approach meet position
             {
                 "t": 400,
-                "xyz": meet_xyz + np.array([0, 0, 0]),
+                "xyz": meet_xyz + np.array([0, 0, dz]), #0]),
                 "quat": gripper_pick_quat.elements,
-                "gripper": 0.012,
+                "gripper": gripper_object_size,
             },  # move to meet position
             {
                 "t": 460,
                 "xyz": meet_xyz + np.array([0, 0, 0]),
                 "quat": gripper_pick_quat.elements,
-                "gripper": 0.012,
+                "gripper": gripper_object_size,
             },  # stay for a while
             {
                 "t": 500,

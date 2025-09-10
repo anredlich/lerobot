@@ -74,7 +74,7 @@ class TrossenArmDriver:
         self.is_connected = False
         self.logs = {}
         self.fps = 30
-        self.home_pose = [0, np.pi / 3, np.pi / 6, np.pi / 5, 0, 0, 0]
+        self.home_pose = [0, np.pi / 3, np.pi / 6, np.pi / 5, 0, 0, 0.05] #0] #anr
         self.sleep_pose = [0, 0, 0, 0, 0, 0, 0]
 
         self.motors = {
@@ -95,6 +95,10 @@ class TrossenArmDriver:
             )
         # Minimum time to move for the arm
         self.MIN_TIME_TO_MOVE = self.min_time_to_move_multiplier / self.fps
+
+    def set_home_pose(self,home_pose):
+        if isinstance(home_pose,list) and len(home_pose)==len(self.home_pose):
+            self.home_pose=home_pose.copy()
 
     def connect(self):
         print(f"Connecting to {self.model} arm at {self.ip}...")
@@ -183,9 +187,9 @@ class TrossenArmDriver:
         # Read the present position of the motors
         if data_name == "Present_Position":
             # Get the positions of the motors
-            values = self.driver.get_all_positions()
+            values = self.driver.get_positions() #anr get_all_positions() back to driver 1.78
         elif data_name == "External_Efforts":
-            values = self.driver.get_all_external_efforts()
+            values = self.driver.get_external_efforts() #anr get_all_external_efforts() back to driver 1.78
         else:
             values = None
             print(f"Data name: {data_name} is not supported for reading.")

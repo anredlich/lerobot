@@ -274,6 +274,9 @@ def record(
     if policy is not None:
         robot.leader_arms = []
 
+    if hasattr(robot, 'set_home_pose'): #anr added
+        robot.set_home_pose([0, 0, 0, 0, 0, 0, 0.05])
+
     if not robot.is_connected:
         robot.connect()
 
@@ -284,8 +287,11 @@ def record(
     # 2. give times to the robot devices to connect and start synchronizing,
     # 3. place the cameras windows on screen
     enable_teleoperation = policy is None
-    log_say("Warmup record", cfg.play_sounds)
+    log_say("Starting warmup", cfg.play_sounds)
+    time.sleep(2)
     warmup_record(robot, events, enable_teleoperation, cfg.warmup_time_s, cfg.display_cameras, cfg.fps)
+    log_say("Finished warmup", cfg.play_sounds)
+    time.sleep(2)
 
     if has_method(robot, "teleop_safety_stop"):
         robot.teleop_safety_stop()
@@ -306,6 +312,8 @@ def record(
             fps=cfg.fps,
             single_task=cfg.single_task,
         )
+        log_say(f"Finished recording episode {dataset.num_episodes}", cfg.play_sounds)
+        time.sleep(2)
 
         # Execute a few seconds without recording to give time to manually reset the environment
         # Current code logic doesn't allow to teleoperate during this time.
@@ -316,16 +324,24 @@ def record(
         ):
             log_say("Reset the environment", cfg.play_sounds)
             reset_environment(robot, events, cfg.reset_time_s, cfg.fps)
+            log_say("Stop resetting the environment", cfg.play_sounds)
+            time.sleep(2)
+            if events["exit_early"]: #anr this fixes a bug
+                events["exit_early"] = False
 
         if events["rerecord_episode"]:
             log_say("Re-record episode", cfg.play_sounds)
+            time.sleep(2)
             events["rerecord_episode"] = False
             events["exit_early"] = False
             dataset.clear_episode_buffer()
             continue
 
+        log_say("Saving episode", cfg.play_sounds)
         dataset.save_episode()
         recorded_episodes += 1
+        log_say("Finished saving episode", cfg.play_sounds)
+        time.sleep(2)
 
         if events["stop_recording"]:
             break
@@ -354,6 +370,9 @@ def replay(
     # Disable leader arms as they are not used during replay
     robot.leader_arms = []
 
+    if hasattr(robot, 'set_home_pose'): #anr added
+        robot.set_home_pose([0, 0, 0, 0, 0, 0, 0.05])
+
     if not robot.is_connected:
         robot.connect()
 
@@ -368,7 +387,7 @@ def replay(
         busy_wait(1 / cfg.fps - dt_s)
 
         dt_s = time.perf_counter() - start_episode_t
-        log_control_info(robot, dt_s, fps=cfg.fps)
+        #log_control_info(robot, dt_s, fps=cfg.fps)
 
 
 @parser.wrap()

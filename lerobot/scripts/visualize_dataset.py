@@ -285,7 +285,10 @@ def main():
     logging.info("Loading dataset")
     dataset = LeRobotDataset(repo_id, root=root, tolerance_s=tolerance_s)
 
-    visualize_dataset(dataset, **vars(args))
+    max_index=args.episode_index
+    for i in range(max_index+1):
+        args.episode_index=i
+        visualize_dataset(dataset, **vars(args))
 
 
 if __name__ == "__main__":

@@ -260,6 +260,7 @@ def record_sim_episode(
             cv2.waitKey(1)
 
         if policy is not None:
+            #print(f'{ts.observation["env_state"][:3]} step={step}')
             if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube_ee':
                 action = policy(ts)
             else:
@@ -391,7 +392,7 @@ def teleoperate(robot: Robot, cfg: TeleoperateControlConfig):
 @safe_disconnect
 def record_sim(
     robot: Robot,
-    env: None,
+    cfg_env: None,
     cfg: RecordControlConfig,
 ) -> LeRobotDataset:
     # TODO(rcadene): Add option to record logs
@@ -419,10 +420,20 @@ def record_sim(
             image_writer_threads=cfg.num_image_writer_threads_per_camera * len(robot.cameras),
         )
 
+    env = gym.make(
+        cfg_env.task, #"gym_aloha/TrossenAIStationaryTransferCube-v0", "gym_aloha/AlohaTransferCube-v0",
+        obs_type="pixels_agent_pos",
+        max_episode_steps=500, #400
+        box_size=cfg_env.box_size,
+        box_color=cfg_env.box_color,
+        tabletop=cfg_env.tabletop
+        #render_mode="human"  # This enables the built-in Gymnasium viewer #anr default
+    )
+
     # Load pretrained policy
     if cfg.policy == 'scripted_policy':
         inject_noise = False
-        policy = PickAndTransferPolicy(inject_noise)
+        policy = PickAndTransferPolicy(inject_noise=inject_noise,box_size=cfg_env.box_size)
     elif 'trossen' in env.unwrapped.task:
         policy = None if cfg.policy is None else make_policy(cfg.policy, ds_meta=dataset.meta)
     else:
@@ -453,6 +464,9 @@ def record_sim(
             task,
             obs_type="pixels_agent_pos",
             max_episode_steps=500, #400
+            box_size=cfg_env.box_size,
+            box_color=cfg_env.box_color,
+            tabletop=cfg_env.tabletop,
             #render_mode="human"  # This enables the built-in Gymnasium viewer #anr default
         )
 
@@ -461,6 +475,7 @@ def record_sim(
         if recorded_episodes >= cfg.num_episodes:
             break
 
+        print(f'recording episode {recorded_episodes}')
         #log_say(f"Recording episode {dataset.num_episodes}", cfg.play_sounds)
         episode=[]
         record_sim_episode(
@@ -562,12 +577,14 @@ def control_sim_robot(cfg: ControlPipelineConfig):
             "Need a simulated environment use option: --env.type e.g. --env.type=aloha .\n"
         )
 
-    env = gym.make(
-        cfg.env.task, #"gym_aloha/TrossenAIStationaryTransferCube-v0", "gym_aloha/AlohaTransferCube-v0",
-        obs_type="pixels_agent_pos",
-        max_episode_steps=500, #400
-        #render_mode="human"  # This enables the built-in Gymnasium viewer #anr default
-    )
+    # env = gym.make(
+    #     cfg.env.task, #"gym_aloha/TrossenAIStationaryTransferCube-v0", "gym_aloha/AlohaTransferCube-v0",
+    #     obs_type="pixels_agent_pos",
+    #     max_episode_steps=500, #400
+    #     box_size=cfg.env.box_size,
+    #     box_color=cfg.env.box_color
+    #     #render_mode="human"  # This enables the built-in Gymnasium viewer #anr default
+    # )
 
     robot = make_robot_from_config(cfg.robot)
 
@@ -576,7 +593,7 @@ def control_sim_robot(cfg: ControlPipelineConfig):
     elif isinstance(cfg.control, TeleoperateControlConfig):
         teleoperate(robot, cfg.control)
     elif isinstance(cfg.control, RecordControlConfig):
-        record_sim(robot, env, cfg.control)
+        record_sim(robot, cfg.env, cfg.control)
     elif isinstance(cfg.control, ReplayControlConfig):
         replay(robot, cfg.control)
     elif isinstance(cfg.control, RemoteRobotConfig):
