@@ -168,6 +168,8 @@ class ManipulatorRobot:
         self.force_feedback_gain = self.config.force_feedback_gain
         self.is_connected = False
         self.logs = {}
+        if self.config.home_pose!=None:
+            self.set_home_pose(self.config.home_pose)
 
     def get_motor_names(self, arm: dict[str, MotorsBus]) -> list:
         return [f"{arm}_{motor}" for arm, bus in arm.items() for motor in bus.motors]

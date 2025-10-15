@@ -59,9 +59,14 @@ env = gym.make(
     id,
     obs_type="pixels_agent_pos",
     max_episode_steps=max_episode_steps,
-    box_size=[0.02,0.02,0.02],
-    tabletop='wood',
-    #box_color=[0.86, 0.18, 0.18,1]
+    box_size=[0.012,0.012,0.012], #[0.02,0.02,0.02], #[0.012,0.012,0.012]
+    #box_pos=[0.0,0.0,-0.012],
+    tabletop='my_desktop', #'plain' 'wood'
+    box_color=[0.86, 0.18, 0.18,1],
+    backdrop='my_backdrop', #'none' 'my_backdrop'
+    lighting=[[0.3,0.3,0.3],[0.3,0.3,0.3]], #table lighting, ambient lighting #[[0.3,0.3,0.3],[0.3,0.3,0.3]] or [[0.1,0.1,0.1],[0.5,0.5,0.5]] best for my desktop/real
+    arms_pos=[-0.4575, 0.0, 0.02, 0.4575, 0.0, 0.02], #base position, left, right; default=[+-4575 -0.019 0.02]
+    arms_ref=[0,-0.015,0.015,0,0,0,0,-0.025,0.025,0,0,0], #left joints 0-5 ref, right joints 0-5 ref; default=[all zeros] 
     #render_mode="human"  # This enables the built-in Gymnasium viewer #anr
 )
 
@@ -75,7 +80,8 @@ if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube':
     pretrained_policy_path=Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act2/checkpoints/last/pretrained_model") #from train.py
     pretrained_policy_path=Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act6/checkpoints/last/pretrained_model") #from train.py on BIG sim DATASET1 seed=1000 -> step=460
     pretrained_policy_path=Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act7/checkpoints/last/pretrained_model") #from train.py on BIG sim DATASET2 20mm seed=1000 -> step=452
-    #pretrained_policy_path=Path("lerobot/scripts/outputs/train/act_trossen_ai_stationary_real_01/checkpoints/last/pretrained_model") #from train.py on BIG real DATASET3 20mm seed=1000 -> step=460
+    pretrained_policy_path=Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act8/checkpoints/last/pretrained_model") #from train.py on BIG sim DATASET2 20mm seed=1000 -> step=452
+    pretrained_policy_path=Path("lerobot/scripts/outputs/train/act_trossen_ai_stationary_real_01/checkpoints/last/pretrained_model") #from train.py on BIG real DATASET3 20mm seed=1000 -> step=460
     #pretrained_policy_path = Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act3")
     #pretrained_policy_path = Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act7") #train_aloha_policy with normalize_data
     #pretrained_policy_path = Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act7/checkpoints/008000/pretrained_model") #normalize_data
@@ -118,12 +124,13 @@ if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube_ee':
     numpy_observation, info = env.reset(seed=41) #,options={'box_size':[0.02,0.02,0.02],'box_color':[0,1,0,1]})
 else:
     policy.reset()
-    numpy_observation, info = env.reset(seed=1000) #seed=40 #,options={'box_color':[1,0,0,.025]}) #seed=1000,options={'box_size':[0.02,0.02,0.02],'box_color':[0,0,1,1]}) #41)
+    numpy_observation, info = env.reset(seed=1008) #seed=40 #,options={'box_color':[1,0,0,.025]}) #seed=1000,options={'box_size':[0.02,0.02,0.02],'box_color':[0,0,1,1]}) #41)
 
 if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube_ee':
     ts=dm_env.TimeStep(step_type=dm_env.StepType.FIRST,reward=None,discount=None,observation=info['raw_obs'])
     print(f"cube position={ts.observation['env_state'][:3]}")
 print(f"cube pos={info['raw_obs']['env_state']}")
+print(f"home pose={numpy_observation['agent_pos']}")
 
 # Prepare to collect every rewards and all the frames of the episode,
 # from initial state to final state.
@@ -138,6 +145,7 @@ if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube' or env.unwrapped.
     cam_list=["cam_high", "cam_low", "cam_left_wrist", "cam_right_wrist"]
 
 plt_imgs = gym_aloha.utils.plot_observation_images(numpy_observation['pixels'], cam_list)
+plt.pause(0.02)
 
 step = 0
 done = False

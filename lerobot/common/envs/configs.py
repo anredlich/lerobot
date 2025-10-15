@@ -47,7 +47,13 @@ class AlohaEnv(EnvConfig):
     render_mode: str = "rgb_array"
     box_size: list[float] | None = None
     box_color: list[float] | None = None
+    box_pos: list[float] | None = None
     tabletop: str | None = None
+    backdrop: str | None = None
+    lighting: list | None = None
+    arms_pos: list[float] | None = None
+    arms_ref: list[float] | None = None
+    rand_ops: list[str] | None = None
     features: dict[str, PolicyFeature] = field(
         default_factory=lambda: {
             "action": PolicyFeature(type=FeatureType.ACTION, shape=(14,)),
@@ -77,7 +83,13 @@ class AlohaEnv(EnvConfig):
             "max_episode_steps": self.episode_length,
             "box_size": self.box_size,
             "box_color": self.box_color,
+            "box_pos": self.box_pos,
             "tabletop": self.tabletop,
+            "backdrop": self.backdrop,
+            "lighting": self.lighting,
+            "arms_pos": self.arms_pos,
+            "arms_ref": self.arms_ref,
+            "rand_ops": self.rand_ops, 
         }
 
 

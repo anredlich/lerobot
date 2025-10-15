@@ -74,7 +74,7 @@ class TrossenArmDriver:
         self.is_connected = False
         self.logs = {}
         self.fps = 30
-        self.home_pose = [0, np.pi / 3, np.pi / 6, np.pi / 5, 0, 0, 0.05] #0] #anr
+        self.home_pose = [0, np.pi / 3, np.pi / 6, np.pi / 5, 0, 0, 0.0]
         self.sleep_pose = [0, 0, 0, 0, 0, 0, 0]
 
         self.motors = {

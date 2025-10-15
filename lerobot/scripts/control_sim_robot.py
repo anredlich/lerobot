@@ -139,6 +139,7 @@ import time
 from dataclasses import asdict
 from pprint import pformat
 import cv2
+import random
 
 # from safetensors.torch import load_file, save_file
 from lerobot.common.datasets.lerobot_dataset import LeRobotDataset
@@ -262,6 +263,7 @@ def record_sim_episode(
         if policy is not None:
             #print(f'{ts.observation["env_state"][:3]} step={step}')
             if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube_ee':
+                policy.box_size=env.unwrapped._env.task.box_size.copy()
                 action = policy(ts)
             else:
                 #action = policy.select_action(observation)
@@ -303,8 +305,12 @@ def record_sim_episode(
 
         if not env.unwrapped.task == 'trossen_ai_stationary_transfer_cube_ee':    
             if terminated:
+                print(f'nsteps={step}')
                 return
-        
+
+    if policy is None and step>=env._max_episode_steps-1:
+        flag=1
+
         #if fps is not None:
         #    dt_s = time.perf_counter() - start_loop_t
         #    busy_wait(1 / fps - dt_s)
@@ -319,6 +325,24 @@ def record_sim_episode(
 
         # if policy is not None:
         #     policy.reset()
+
+def random_env_options(env,env2,rand_ops):
+    set1={'box_size':[[0.02,0.02,0.02],[0.0125,0.0125,0.0125]],'box_color':[[1,0,0,1],[0,1,0,1],[0,0,1,1]],
+          'arms_pos':[[-0.4575, 0.0, 0.02, 0.4575, 0.0, 0.02],[-0.4575, -0.019, 0.02, 0.4575, -0.019, 0.02],[-0.4575, 0.019, 0.02, 0.4575, 0.019, 0.02]],
+          'arms_ref':[[0,-0.015,0.015,0,0,0,0,-0.025,0.025,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0],[0,0.015,-0.015,0,0,0,0,0.025,-0.025,0,0,0]]}
+    op_sets={'set1':set1}
+    for op in rand_ops:
+        if '-' in op:
+            option, set = op.split('-', 1)  # maxsplit=1 in case of multiple '-'
+        else:
+            option = op
+            set = 'set1'
+        op_value = random.choice(op_sets[set][option])
+        setattr(env.unwrapped._env.task, option, op_value)
+        setattr(env2.unwrapped._env.task, option, op_value)
+        #env.unwrapped._env.task.box_color=[0,0,1,1]
+        #env2.unwrapped._env.task.box_color=[0,1,0,1]
+    return env, env2
 
 ########################################################################################
 # Control modes
@@ -426,7 +450,12 @@ def record_sim(
         max_episode_steps=500, #400
         box_size=cfg_env.box_size,
         box_color=cfg_env.box_color,
-        tabletop=cfg_env.tabletop
+        box_pos=cfg_env.box_pos,
+        tabletop=cfg_env.tabletop,
+        backdrop=cfg_env.backdrop,
+        lighting=cfg_env.lighting,
+        arms_pos=cfg_env.arms_pos,
+        arms_ref=cfg_env.arms_ref,
         #render_mode="human"  # This enables the built-in Gymnasium viewer #anr default
     )
 
@@ -466,14 +495,22 @@ def record_sim(
             max_episode_steps=500, #400
             box_size=cfg_env.box_size,
             box_color=cfg_env.box_color,
+            box_pos=cfg_env.box_pos,
             tabletop=cfg_env.tabletop,
-            #render_mode="human"  # This enables the built-in Gymnasium viewer #anr default
+            backdrop=cfg_env.backdrop,
+            lighting=cfg_env.lighting,
+            arms_pos=cfg_env.arms_pos,
+            arms_ref=cfg_env.arms_ref,
+             #render_mode="human"  # This enables the built-in Gymnasium viewer #anr default
         )
 
     recorded_episodes = 0
     while True:
         if recorded_episodes >= cfg.num_episodes:
             break
+
+        if cfg_env.rand_ops!=None:
+            [env, env2]=random_env_options(env,env2,cfg_env.rand_ops)
 
         print(f'recording episode {recorded_episodes}')
         #log_say(f"Recording episode {dataset.num_episodes}", cfg.play_sounds)
@@ -542,23 +579,58 @@ def record_sim(
 @safe_disconnect
 def replay(
     robot: Robot,
+    cfg_env: None,
     cfg: ReplayControlConfig,
 ):
     # TODO(rcadene, aliberts): refactor with control_loop, once `dataset` is an instance of LeRobotDataset
     # TODO(rcadene): Add option to record logs
 
+    env = gym.make(
+        cfg_env.task,
+        obs_type="pixels_agent_pos",
+        max_episode_steps=500, #400
+        box_size=cfg_env.box_size,
+        box_color=cfg_env.box_color,
+        box_pos=cfg_env.box_pos,
+        tabletop=cfg_env.tabletop,
+        backdrop=cfg_env.backdrop,
+        lighting=cfg_env.lighting,
+        arms_pos=cfg_env.arms_pos,
+        arms_ref=cfg_env.arms_ref,
+        #render_mode="human"  # This enables the built-in Gymnasium viewer #anr default
+    )
+
     dataset = LeRobotDataset(cfg.repo_id, root=cfg.root, episodes=[cfg.episode])
     actions = dataset.hf_dataset.select_columns("action")
 
-    if not robot.is_connected:
-        robot.connect()
+    #anr using env instead of robot
+    #if not robot.is_connected:
+    #    robot.connect()
+
+    numpy_observation, info = env.reset()
 
     log_say("Replaying episode", cfg.play_sounds, blocking=True)
     for idx in range(dataset.num_frames):
         start_episode_t = time.perf_counter()
 
+        #visualize:
+        display_cameras=True
+        if display_cameras and not is_headless():
+            cam_list = numpy_observation["pixels"].keys()
+            for cam in cam_list:
+                image=torch.from_numpy(numpy_observation["pixels"][cam])
+                cv2.imshow(cam, cv2.cvtColor(image.numpy(), cv2.COLOR_RGB2BGR))
+            cv2.waitKey(1)
+
         action = actions[idx]["action"]
-        robot.send_action(action)
+        #robot.send_action(action)
+
+        if isinstance(action, torch.Tensor):
+            numpy_action = action.squeeze(0).to("cpu").numpy()
+        else:
+            numpy_action = action
+
+        numpy_observation, reward, terminated, truncated, info = env.step(numpy_action)
 
         dt_s = time.perf_counter() - start_episode_t
         busy_wait(1 / cfg.fps - dt_s)
@@ -595,7 +667,7 @@ def control_sim_robot(cfg: ControlPipelineConfig):
     elif isinstance(cfg.control, RecordControlConfig):
         record_sim(robot, cfg.env, cfg.control)
     elif isinstance(cfg.control, ReplayControlConfig):
-        replay(robot, cfg.control)
+        replay(robot, cfg.env, cfg.control)
     elif isinstance(cfg.control, RemoteRobotConfig):
         from lerobot.common.robot_devices.robots.lekiwi_remote import run_lekiwi
 

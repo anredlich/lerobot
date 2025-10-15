@@ -162,7 +162,8 @@ class PickAndTransferPolicy(BasePolicy):
 
         gripper_object_size=0.012 #default based on box_size=[0.0125,0.0125,0.0125]
         if isinstance(self.box_size, list) and len(self.box_size) == 3: #anr added box_size
-            gripper_object_size=self.box_size[0]-0.0005
+           delta=0.2*self.box_size[0]
+           gripper_object_size=self.box_size[0]-delta #default 0.0005
 
         dz=-0.015 #anr was dz=0 this is a fudge because right arm seems to shoot higher than target z
 

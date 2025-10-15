@@ -227,14 +227,16 @@ def calibrate(robot: Robot, cfg: CalibrateControlConfig):
 
 @safe_disconnect
 def teleoperate(robot: Robot, cfg: TeleoperateControlConfig):
+    listener, events = init_keyboard_listener()
     control_loop(
         robot,
+        events=events,
         control_time_s=cfg.teleop_time_s,
         fps=cfg.fps,
         teleoperate=True,
         display_cameras=cfg.display_cameras,
     )
-
+    listener.stop()
 
 @safe_disconnect
 def record(
@@ -274,8 +276,8 @@ def record(
     if policy is not None:
         robot.leader_arms = []
 
-    if hasattr(robot, 'set_home_pose'): #anr added
-        robot.set_home_pose([0, 0, 0, 0, 0, 0, 0.05])
+    #if hasattr(robot, 'set_home_pose'): #anr added
+    #    robot.set_home_pose([0, 0, 0, 0, 0, 0, 0.05])
 
     if not robot.is_connected:
         robot.connect()
@@ -370,8 +372,8 @@ def replay(
     # Disable leader arms as they are not used during replay
     robot.leader_arms = []
 
-    if hasattr(robot, 'set_home_pose'): #anr added
-        robot.set_home_pose([0, 0, 0, 0, 0, 0, 0.05])
+    #if hasattr(robot, 'set_home_pose'): #anr added
+    #    robot.set_home_pose([0, 0, 0, 0, 0, 0, 0.05])
 
     if not robot.is_connected:
         robot.connect()

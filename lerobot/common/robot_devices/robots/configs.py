@@ -58,6 +58,8 @@ class ManipulatorRobotConfig(RobotConfig):
 
     mock: bool = False
 
+    home_pose: list[float] | None = None
+
     def __post_init__(self):
         if self.mock:
             for arm in self.leader_arms.values():
