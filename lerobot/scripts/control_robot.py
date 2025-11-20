@@ -134,6 +134,7 @@ python lerobot/scripts/control_robot.py \
 ```
 """
 
+import cv2
 import logging
 import time
 from dataclasses import asdict
@@ -366,6 +367,8 @@ def replay(
     # TODO(rcadene, aliberts): refactor with control_loop, once `dataset` is an instance of LeRobotDataset
     # TODO(rcadene): Add option to record logs
 
+    display_cameras=True
+
     dataset = LeRobotDataset(cfg.repo_id, root=cfg.root, episodes=[cfg.episode])
     actions = dataset.hf_dataset.select_columns("action")
 
@@ -384,6 +387,13 @@ def replay(
 
         action = actions[idx]["action"]
         robot.send_action(action)
+
+        observation = robot.capture_observation()
+        if display_cameras: # and not is_headless():
+            image_keys = [key for key in observation if "image" in key]
+            for key in image_keys:
+                cv2.imshow(key, cv2.cvtColor(observation[key].numpy(), cv2.COLOR_RGB2BGR))
+            cv2.waitKey(1)
 
         dt_s = time.perf_counter() - start_episode_t
         busy_wait(1 / cfg.fps - dt_s)

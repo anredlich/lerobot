@@ -33,7 +33,7 @@ import torch
 from lerobot.common.policies.diffusion.modeling_diffusion import DiffusionPolicy
 
 # Create a directory to store the video of the evaluation
-output_directory = Path("outputs/eval/example_pusht_diffusion")
+output_directory = Path("outputs/eval/example_pusht_diffusion_junk")
 output_directory.mkdir(parents=True, exist_ok=True)
 
 # Select your device
@@ -42,7 +42,7 @@ device = "cuda"
 # Provide the [hugging face repo id](https://huggingface.co/lerobot/diffusion_pusht):
 pretrained_policy_path = "lerobot/diffusion_pusht"
 # OR a path to a local outputs/train folder.
-pretrained_policy_path = Path("./outputs/train/example_pusht_diffusion")
+pretrained_policy_path = Path("./outputs/train/example_pusht_diffusion3")
 
 policy = DiffusionPolicy.from_pretrained(pretrained_policy_path)
 
@@ -68,7 +68,7 @@ print(env.action_space)
 
 # Reset the policy and environments to prepare for rollout
 policy.reset()
-numpy_observation, info = env.reset(seed=42)
+numpy_observation, info = env.reset(seed=50) #seed=43 works with lerobot/diffusion_pusht
 
 
 # Prepare to collect every rewards and all the frames of the episode,

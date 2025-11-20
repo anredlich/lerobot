@@ -50,12 +50,13 @@ class BasePolicy:
     :param inject_noise: Whether to inject noise into actions for robustness testing, defaults to ``False``.
     """
 
-    def __init__(self, inject_noise: bool = False, box_size: list[float] | None = None): #anr added box_size
+    def __init__(self, inject_noise: bool = False, box_size: list[float] | None = None, random_paths: bool = False): #anr added box_size
         self.inject_noise = inject_noise
         self.step_count = 0
         self.left_trajectory: list[dict] = []
         self.right_trajectory: list[dict] = []
         self.box_size=box_size
+        self.random_paths = random_paths
 
     def generate_trajectory(self, ts_first: TimeStep):
         """
@@ -176,7 +177,7 @@ class PickAndTransferPolicy(BasePolicy):
                 "t": 0,
                 "xyz": init_mocap_pose_left[:3],
                 "quat": init_mocap_pose_left[3:],
-                "gripper": 0,
+                "gripper": 0.044, #0,
             },  # sleep
             {
                 "t": 100,
@@ -227,7 +228,7 @@ class PickAndTransferPolicy(BasePolicy):
                 "t": 0,
                 "xyz": init_mocap_pose_right[:3],
                 "quat": init_mocap_pose_right[3:],
-                "gripper": 0,
+                "gripper": 0.044, #0,
             },  # sleep
             {
                 "t": 5,
@@ -320,6 +321,15 @@ class PickAndTransferPolicy(BasePolicy):
                 "gripper": 0.044,
             },  # stay
         ]
+
+        if self.random_paths:
+            dx = np.random.uniform(0, 0.1)
+            dy = np.random.uniform(-0.1, 0.1)
+            dz = np.random.uniform(-0.1, 0.1)
+            item_80=next(item for item in self.right_trajectory if item["t"] == 80)
+            item_120=next(item for item in self.right_trajectory if item["t"] == 120)
+            item_80['xyz']=item_80['xyz']+np.array([dx, dy, dz])
+            item_120['xyz']=item_120['xyz']+np.array([dx, dy, dz])
 
 
 # def test_policy(

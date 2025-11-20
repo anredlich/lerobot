@@ -31,15 +31,15 @@ from lerobot.configs.types import FeatureType
 
 def main():
     # Create a directory to store the training checkpoint.
-    output_directory = Path("outputs/train/example_pusht_diffusion")
-    output_directory.mkdir(parents=True, exist_ok=True)
+    output_directory = Path("outputs/train/example_pusht_diffusion4")
+    output_directory.mkdir(parents=True, exist_ok=False)
 
     # # Select your device
     device = torch.device("cuda")
 
     # Number of offline training steps (we'll only do offline training for this example.)
     # Adjust as you prefer. 5000 steps are needed to get something worth evaluating.
-    training_steps = 50 #00
+    training_steps = 10000
     log_freq = 1
 
     # When starting from scratch (i.e. not from a pretrained policy), we need to specify 2 things before

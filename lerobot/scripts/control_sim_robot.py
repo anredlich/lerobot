@@ -329,8 +329,11 @@ def record_sim_episode(
 def random_env_options(env,env2,rand_ops):
     set1={'box_size':[[0.02,0.02,0.02],[0.0125,0.0125,0.0125]],'box_color':[[1,0,0,1],[0,1,0,1],[0,0,1,1]],
           'arms_pos':[[-0.4575, 0.0, 0.02, 0.4575, 0.0, 0.02],[-0.4575, -0.019, 0.02, 0.4575, -0.019, 0.02],[-0.4575, 0.019, 0.02, 0.4575, 0.019, 0.02]],
-          'arms_ref':[[0,-0.015,0.015,0,0,0,0,-0.025,0.025,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0],[0,0.015,-0.015,0,0,0,0,0.025,-0.025,0,0,0]]}
-    op_sets={'set1':set1}
+          'arms_ref':[[0,-0.015,0.015,0,0,0,0,-0.025,0.025,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0],[0,0.015,-0.015,0,0,0,0,0.025,-0.025,0,0,0]],
+          'lighting':[[[0.3,0.3,0.3],[0.3,0.3,0.3]],[[0.1,0.1,0.1],[0.5,0.5,0.5]],[[-1,0,0],[-1,0,0]]]} #-1 -> default lighting
+    set2={'lighting':[[[0.3,0.3,0.3],[0.3,0.3,0.3]],[[0.1,0.1,0.1],[-0.5,0.5,0.5]]],
+          'tabletop':['my_desktop','wood']}
+    op_sets={'set1':set1,'set2':set2}
     for op in rand_ops:
         if '-' in op:
             option, set = op.split('-', 1)  # maxsplit=1 in case of multiple '-'
@@ -462,7 +465,8 @@ def record_sim(
     # Load pretrained policy
     if cfg.policy == 'scripted_policy':
         inject_noise = False
-        policy = PickAndTransferPolicy(inject_noise=inject_noise,box_size=cfg_env.box_size)
+        random_paths = False
+        policy = PickAndTransferPolicy(inject_noise=inject_noise,box_size=cfg_env.box_size,random_paths=random_paths)
     elif 'trossen' in env.unwrapped.task:
         policy = None if cfg.policy is None else make_policy(cfg.policy, ds_meta=dataset.meta)
     else:

@@ -22,6 +22,7 @@ pip install --no-binary=av -e ".[pusht]"`
 ```
 """
 
+import json
 from pathlib import Path
 
 #import gym_pusht  # noqa: F401
@@ -37,6 +38,8 @@ import dm_env
 from lerobot.common.policies.act.modeling_act import ACTPolicy
 from lerobot.common.policies.scripted_policy import PickAndTransferPolicy
 from lerobot.common.robot_devices.robots.utils import normalize_state, unnormalize_numpy_action
+from lerobot.common.policies.diffusion.configuration_diffusion import DiffusionConfig
+from lerobot.common.policies.diffusion.modeling_diffusion import DiffusionPolicy
 
 # Create a directory to store the video of the evaluation
 output_directory = Path("outputs/eval/example_aloha_act2") #anr example_pusht_diffusion
@@ -49,7 +52,7 @@ device = "cuda"
 # an image of the scene and state/position cube position=[-0.02472291 -0.13617125  0.0125    ]of the agent. The environment
 # also automatically stops running after 300 interactions/steps.
 id = "gym_aloha/AlohaTransferCube-v0"
-id = "gym_aloha/TrossenAIStationaryTransferCube-v0"
+#id = "gym_aloha/TrossenAIStationaryTransferCube-v0"
 #id = "gym_aloha/TrossenAIStationaryTransferCubeEE-v0"
 if id == "gym_aloha/TrossenAIStationaryTransferCubeEE-v0" or id == "gym_aloha/TrossenAIStationaryTransferCube-v0":
     max_episode_steps = 500
@@ -59,14 +62,17 @@ env = gym.make(
     id,
     obs_type="pixels_agent_pos",
     max_episode_steps=max_episode_steps,
-    box_size=[0.012,0.012,0.012], #[0.02,0.02,0.02], #[0.012,0.012,0.012]
-    #box_pos=[0.0,0.0,-0.012],
-    tabletop='my_desktop', #'plain' 'wood'
-    box_color=[0.86, 0.18, 0.18,1],
+    box_size=[0.02,0.02,0.02], #[0.0125,0.0125,0.0125], #[0.02,0.02,0.02], #[0.012,0.012,0.012]
+    box_pos=[0.0,0.0,-0.02], #[0.0,0.0,-0.0125],
+    tabletop='my_desktop', #'my_desktop', #'plain' 'wood'
+    box_color=[1,0,0,1], #[0.86, 0.18, 0.18,1],
     backdrop='my_backdrop', #'none' 'my_backdrop'
-    lighting=[[0.3,0.3,0.3],[0.3,0.3,0.3]], #table lighting, ambient lighting #[[0.3,0.3,0.3],[0.3,0.3,0.3]] or [[0.1,0.1,0.1],[0.5,0.5,0.5]] best for my desktop/real
-    arms_pos=[-0.4575, 0.0, 0.02, 0.4575, 0.0, 0.02], #base position, left, right; default=[+-4575 -0.019 0.02]
-    arms_ref=[0,-0.015,0.015,0,0,0,0,-0.025,0.025,0,0,0], #left joints 0-5 ref, right joints 0-5 ref; default=[all zeros] 
+    lighting=[[0.3,0.3,0.3],[0.3,0.3,0.3]], #[[0.3,0.3,0.3],[0.3,0.3,0.3]], #[[0.3,0.3,0.3],[0.3,0.3,0.3]], #[[0.1,0.1,0.1],[-0.5,0.5,0.5]], #[[0.3,0.3,0.3],[0.3,0.3,0.3]], #[[0.3,0.3,0.3],[0.3,0.3,0.3]], #[[0.1,0.1,0.1],[0.5,0.5,0.5]], #[[0.1,0.1,0.1],[0.5,0.5,0.5]], #[[0.3,0.3,0.3],[0.3,0.3,0.3]], #table lighting, ambient lighting #[[0.3,0.3,0.3],[0.3,0.3,0.3]] or [[0.1,0.1,0.1],[0.5,0.5,0.5]] best for my desktop/real
+    #lighting=[[0.05,0.05,0.05],[0.3,0.3,0.3]], #[[0.3,0.3,0.3],[0.3,0.3,0.3]], #[[0.3,0.3,0.3],[0.3,0.3,0.3]], #[[0.1,0.1,0.1],[-0.5,0.5,0.5]], #[[0.3,0.3,0.3],[0.3,0.3,0.3]], #[[0.3,0.3,0.3],[0.3,0.3,0.3]], #[[0.1,0.1,0.1],[0.5,0.5,0.5]], #[[0.1,0.1,0.1],[0.5,0.5,0.5]], #[[0.3,0.3,0.3],[0.3,0.3,0.3]], #table lighting, ambient lighting #[[0.3,0.3,0.3],[0.3,0.3,0.3]] or [[0.1,0.1,0.1],[0.5,0.5,0.5]] best for my desktop/real
+    #lighting=[[0.1,0.1,0.1],[-0.5,0.5,0.5]], #[[0.3,0.3,0.3],[0.3,0.3,0.3]], #[[0.3,0.3,0.3],[0.3,0.3,0.3]], #[[0.1,0.1,0.1],[-0.5,0.5,0.5]], #[[0.3,0.3,0.3],[0.3,0.3,0.3]], #[[0.3,0.3,0.3],[0.3,0.3,0.3]], #[[0.1,0.1,0.1],[0.5,0.5,0.5]], #[[0.1,0.1,0.1],[0.5,0.5,0.5]], #[[0.3,0.3,0.3],[0.3,0.3,0.3]], #table lighting, ambient lighting #[[0.3,0.3,0.3],[0.3,0.3,0.3]] or [[0.1,0.1,0.1],[0.5,0.5,0.5]] best for my desktop/real
+    #arms_pos=[-0.4575, 0.0, 0.02, 0.4575, 0.0, 0.02], #base position, left, right; default=[+-4575 -0.019 0.02]
+    #arms_ref=[0,-0.015,0.015,0,0,0,0,-0.025,0.025,0,0,0], #left joints 0-5 ref, right joints 0-5 ref; default=[all zeros] 
+    #arms_ref=[0,-0.025,0.025,0,0,0,0,-0.025,0.025,0,0,0], #left joints 0-5 ref, right joints 0-5 ref; default=[all zeros] 
     #render_mode="human"  # This enables the built-in Gymnasium viewer #anr
 )
 
@@ -81,7 +87,9 @@ if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube':
     pretrained_policy_path=Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act6/checkpoints/last/pretrained_model") #from train.py on BIG sim DATASET1 seed=1000 -> step=460
     pretrained_policy_path=Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act7/checkpoints/last/pretrained_model") #from train.py on BIG sim DATASET2 20mm seed=1000 -> step=452
     pretrained_policy_path=Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act8/checkpoints/last/pretrained_model") #from train.py on BIG sim DATASET2 20mm seed=1000 -> step=452
-    pretrained_policy_path=Path("lerobot/scripts/outputs/train/act_trossen_ai_stationary_real_01/checkpoints/last/pretrained_model") #from train.py on BIG real DATASET3 20mm seed=1000 -> step=460
+    pretrained_policy_path=Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act13/checkpoints/last/pretrained_model") #from train.py on BIG sim DATASET2 20mm seed=1000 -> step=452, 441
+    #pretrained_policy_path=Path("lerobot/scripts/outputs/train/act_trossen_ai_stationary_real_01/checkpoints/last/pretrained_model") #from train.py on BIG real DATASET3 20mm seed=1000 -> step=460
+    #pretrained_policy_path=Path("lerobot/scripts/outputs/train/act_trossen_ai_stationary_real_02_3/checkpoints/last/pretrained_model") #from train.py on BIG real DATASET3 20mm seed=1000 -> step=460
     #pretrained_policy_path = Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act3")
     #pretrained_policy_path = Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act7") #train_aloha_policy with normalize_data
     #pretrained_policy_path = Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act7/checkpoints/008000/pretrained_model") #normalize_data
@@ -92,13 +100,26 @@ if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube_ee':
     policy_cls = PickAndTransferPolicy
     policy = PickAndTransferPolicy(inject_noise=inject_noise,box_size=[0.02,0.02,0.02])
 elif env.unwrapped.task == 'transfer_cube':
-    pretrained_policy_path = "lerobot/act_aloha_sim_transfer_cube_human" #seed=41 -> step=266,270
+    pretrained_policy_path = Path("lerobot/act_aloha_sim_transfer_cube_human") #seed=41 -> step=266,270
     #pretrained_policy_path = Path("outputs/train/act_aloha_transfer/checkpoints/last/pretrained_model") #from train.py seed=41 -> step=264,266
     #pretrained_policy_path = Path("lerobot/scripts/outputs/train/example_aloha_act2") #from train_aloha_policy seed=42 -> step=293
-    pretrained_policy_path = Path("lerobot/scripts/outputs/train/example_aloha_act6") #from train_aloha_policy seed=42 -> step=293
-    #pretrained_policy_path = Path("lerobot/scripts/outputs/train/example_aloha_act7") #from train_aloha_policy
+    pretrained_policy_path = Path("lerobot/scripts/outputs/train/example_aloha_act6") #from train_aloha_policy seed=42 -> step=293, 281
+    #pretrained_policy_path = Path("lerobot/scripts/outputs/train/example_aloha_act8") #from train_aloha_policy seed=41 -> step=273, 265
+    #pretrained_policy_path = Path("lerobot/scripts/outputs/train/example_aloha_act9") #from train_aloha_policy seed=41 -> step=275, this uses ImageNet normalization
+    #pretrained_policy_path = Path("lerobot/scripts/outputs/train/example_aloha_diffusion1") #diffusion policy
     #pretrained_policy_path = Path("lerobot/scripts/outputs/train/act_aloha_transfer6/checkpoints/003000/pretrained_model")
-    policy = ACTPolicy.from_pretrained(pretrained_policy_path)
+    #pretrained_policy_path = Path("lerobot/scripts/outputs/train/act_aloha_transfer11/checkpoints/last/pretrained_model")
+    config_path = pretrained_policy_path/"config.json"
+    if config_path.exists():
+        with open(config_path, 'r') as f:
+            config_dict = json.load(f)
+        policy_type = config_dict.get("type", "act")  # Default to "act" if not specified
+    else:
+        policy_type = 'act'
+    if policy_type=='diffusion':
+        policy = DiffusionPolicy.from_pretrained(pretrained_policy_path)
+    else:
+        policy = ACTPolicy.from_pretrained(pretrained_policy_path)
 
 #policy = DiffusionPolicy.from_pretrained(pretrained_policy_path)
 
@@ -122,9 +143,12 @@ print(env.action_space)
 if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube_ee':
     policy.reset() #options={'box_size':[0.02,0.02,0.02]})
     numpy_observation, info = env.reset(seed=41) #,options={'box_size':[0.02,0.02,0.02],'box_color':[0,1,0,1]})
+elif env.unwrapped.task == 'trossen_ai_stationary_transfer_cube':
+    policy.reset()
+    numpy_observation, info = env.reset(seed=1000) #seed=40 #,options={'box_color':[1,0,0,.025]}) #seed=1000,options={'box_size':[0.02,0.02,0.02],'box_color':[0,0,1,1]}) #41)
 else:
     policy.reset()
-    numpy_observation, info = env.reset(seed=1008) #seed=40 #,options={'box_color':[1,0,0,.025]}) #seed=1000,options={'box_size':[0.02,0.02,0.02],'box_color':[0,0,1,1]}) #41)
+    numpy_observation, info = env.reset(seed=42) #seed=40 #,options={'box_color':[1,0,0,.025]}) #seed=1000,options={'box_size':[0.02,0.02,0.02],'box_color':[0,0,1,1]}) #41)
 
 if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube_ee':
     ts=dm_env.TimeStep(step_type=dm_env.StepType.FIRST,reward=None,discount=None,observation=info['raw_obs'])

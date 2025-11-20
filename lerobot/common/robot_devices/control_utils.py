@@ -249,8 +249,8 @@ def control_loop(
 
         if teleoperate:
             observation, action = robot.teleop_step(record_data=True)
-            print(f"left arm = {observation['observation.state'][:7]}")
-            print(f"right arm = {observation['observation.state'][7:]}")
+            #print(f"left arm = {observation['observation.state'][:7]}")
+            #print(f"right arm = {observation['observation.state'][7:]}")
         else:
             observation = robot.capture_observation()
 
