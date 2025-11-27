@@ -52,7 +52,7 @@ device = "cuda"
 # an image of the scene and state/position cube position=[-0.02472291 -0.13617125  0.0125    ]of the agent. The environment
 # also automatically stops running after 300 interactions/steps.
 id = "gym_aloha/AlohaTransferCube-v0"
-#id = "gym_aloha/TrossenAIStationaryTransferCube-v0"
+id = "gym_aloha/TrossenAIStationaryTransferCube-v0"
 #id = "gym_aloha/TrossenAIStationaryTransferCubeEE-v0"
 if id == "gym_aloha/TrossenAIStationaryTransferCubeEE-v0" or id == "gym_aloha/TrossenAIStationaryTransferCube-v0":
     max_episode_steps = 500
@@ -62,17 +62,18 @@ env = gym.make(
     id,
     obs_type="pixels_agent_pos",
     max_episode_steps=max_episode_steps,
-    box_size=[0.02,0.02,0.02], #[0.0125,0.0125,0.0125], #[0.02,0.02,0.02], #[0.012,0.012,0.012]
-    box_pos=[0.0,0.0,-0.02], #[0.0,0.0,-0.0125],
-    tabletop='my_desktop', #'my_desktop', #'plain' 'wood'
-    box_color=[1,0,0,1], #[0.86, 0.18, 0.18,1],
-    backdrop='my_backdrop', #'none' 'my_backdrop'
-    lighting=[[0.3,0.3,0.3],[0.3,0.3,0.3]], #[[0.3,0.3,0.3],[0.3,0.3,0.3]], #[[0.3,0.3,0.3],[0.3,0.3,0.3]], #[[0.1,0.1,0.1],[-0.5,0.5,0.5]], #[[0.3,0.3,0.3],[0.3,0.3,0.3]], #[[0.3,0.3,0.3],[0.3,0.3,0.3]], #[[0.1,0.1,0.1],[0.5,0.5,0.5]], #[[0.1,0.1,0.1],[0.5,0.5,0.5]], #[[0.3,0.3,0.3],[0.3,0.3,0.3]], #table lighting, ambient lighting #[[0.3,0.3,0.3],[0.3,0.3,0.3]] or [[0.1,0.1,0.1],[0.5,0.5,0.5]] best for my desktop/real
+    box_size=[0.02,0.02,0.02], #[0.0125,0.0125,0.0125], #[0.02,0.02,0.02], #[0.012,0.012,0.012] #real to sim 02_3
+    #box_pos=[0.0,0.0,-0.02], #[0.0,0.0,-0.0125], #real to sim 02_3
+    tabletop='my_desktop', #'my_desktop', #'plain' 'wood' #real to sim 02_3
+    #box_color=[1,0,0,1], #[0.86, 0.18, 0.18,1], #real to sim 02_3
+    #box_color=[0.86, 0.18, 0.18,1],
+    #backdrop='my_backdrop', #'none' 'my_backdrop' #real to sim 02_3
+    #lighting=[[0.3,0.3,0.3],[0.3,0.3,0.3]], #real to sim 02_3
     #lighting=[[0.05,0.05,0.05],[0.3,0.3,0.3]], #[[0.3,0.3,0.3],[0.3,0.3,0.3]], #[[0.3,0.3,0.3],[0.3,0.3,0.3]], #[[0.1,0.1,0.1],[-0.5,0.5,0.5]], #[[0.3,0.3,0.3],[0.3,0.3,0.3]], #[[0.3,0.3,0.3],[0.3,0.3,0.3]], #[[0.1,0.1,0.1],[0.5,0.5,0.5]], #[[0.1,0.1,0.1],[0.5,0.5,0.5]], #[[0.3,0.3,0.3],[0.3,0.3,0.3]], #table lighting, ambient lighting #[[0.3,0.3,0.3],[0.3,0.3,0.3]] or [[0.1,0.1,0.1],[0.5,0.5,0.5]] best for my desktop/real
-    #lighting=[[0.1,0.1,0.1],[-0.5,0.5,0.5]], #[[0.3,0.3,0.3],[0.3,0.3,0.3]], #[[0.3,0.3,0.3],[0.3,0.3,0.3]], #[[0.1,0.1,0.1],[-0.5,0.5,0.5]], #[[0.3,0.3,0.3],[0.3,0.3,0.3]], #[[0.3,0.3,0.3],[0.3,0.3,0.3]], #[[0.1,0.1,0.1],[0.5,0.5,0.5]], #[[0.1,0.1,0.1],[0.5,0.5,0.5]], #[[0.3,0.3,0.3],[0.3,0.3,0.3]], #table lighting, ambient lighting #[[0.3,0.3,0.3],[0.3,0.3,0.3]] or [[0.1,0.1,0.1],[0.5,0.5,0.5]] best for my desktop/real
-    #arms_pos=[-0.4575, 0.0, 0.02, 0.4575, 0.0, 0.02], #base position, left, right; default=[+-4575 -0.019 0.02]
+    #lighting=[[0.1,0.1,0.1],[-0.5,0.5,0.5]], #real to sim 02_3
+    #arms_pos=[-0.4575, 0.0, 0.02, 0.4575, 0.0, 0.02], #base position, left, right; default=[+-4575 -0.019 0.02] #real to sim 02_3
     #arms_ref=[0,-0.015,0.015,0,0,0,0,-0.025,0.025,0,0,0], #left joints 0-5 ref, right joints 0-5 ref; default=[all zeros] 
-    #arms_ref=[0,-0.025,0.025,0,0,0,0,-0.025,0.025,0,0,0], #left joints 0-5 ref, right joints 0-5 ref; default=[all zeros] 
+    #arms_ref=[0,-0.025,0.025,0,0,0,0,-0.025,0.025,0,0,0], #left joints 0-5 ref, right joints 0-5 ref; default=[all zeros] #real to sim 02_3
     #render_mode="human"  # This enables the built-in Gymnasium viewer #anr
 )
 
@@ -86,10 +87,15 @@ if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube':
     pretrained_policy_path=Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act2/checkpoints/last/pretrained_model") #from train.py
     pretrained_policy_path=Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act6/checkpoints/last/pretrained_model") #from train.py on BIG sim DATASET1 seed=1000 -> step=460
     pretrained_policy_path=Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act7/checkpoints/last/pretrained_model") #from train.py on BIG sim DATASET2 20mm seed=1000 -> step=452
-    pretrained_policy_path=Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act8/checkpoints/last/pretrained_model") #from train.py on BIG sim DATASET2 20mm seed=1000 -> step=452
-    pretrained_policy_path=Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act13/checkpoints/last/pretrained_model") #from train.py on BIG sim DATASET2 20mm seed=1000 -> step=452, 441
+    pretrained_policy_path=Path("ANRedlich/trossen_ai_stationary_sim_act7") #from train.py on BIG sim DATASET2 20mm seed=1000 -> step=452
+    #pretrained_policy_path=Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act8/checkpoints/last/pretrained_model") #from train.py on BIG sim DATASET4 20mm seed=1000 -> step=452
+    pretrained_policy_path=Path("ANRedlich/trossen_ai_stationary_sim_act8") #from train.py on BIG sim DATASET4
+    #pretrained_policy_path=Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act13/checkpoints/last/pretrained_model") #from train.py on BIG sim DATASET2 20mm seed=1000 -> step=452, 441
+    pretrained_policy_path=Path("ANRedlich/trossen_ai_stationary_sim_act10") #from train.py on BIG sim DATASET6
+    #pretrained_policy_path=Path("ANRedlich/trossen_ai_stationary_sim_act13") #from train.py on BIG sim DATASET9
     #pretrained_policy_path=Path("lerobot/scripts/outputs/train/act_trossen_ai_stationary_real_01/checkpoints/last/pretrained_model") #from train.py on BIG real DATASET3 20mm seed=1000 -> step=460
-    #pretrained_policy_path=Path("lerobot/scripts/outputs/train/act_trossen_ai_stationary_real_02_3/checkpoints/last/pretrained_model") #from train.py on BIG real DATASET3 20mm seed=1000 -> step=460
+    #pretrained_policy_path=Path("lerobot/scripts/outputs/train/act_trossen_ai_stationary_real_02_3/checkpoints/last/pretrained_model") #seed=1002 pretty good real to sim
+    #pretrained_policy_path=Path("ANRedlich/trossen_ai_stationary_real_act2_3") #seed=1002 pretty good real to sim
     #pretrained_policy_path = Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act3")
     #pretrained_policy_path = Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act7") #train_aloha_policy with normalize_data
     #pretrained_policy_path = Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act7/checkpoints/008000/pretrained_model") #normalize_data
@@ -145,7 +151,7 @@ if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube_ee':
     numpy_observation, info = env.reset(seed=41) #,options={'box_size':[0.02,0.02,0.02],'box_color':[0,1,0,1]})
 elif env.unwrapped.task == 'trossen_ai_stationary_transfer_cube':
     policy.reset()
-    numpy_observation, info = env.reset(seed=1000) #seed=40 #,options={'box_color':[1,0,0,.025]}) #seed=1000,options={'box_size':[0.02,0.02,0.02],'box_color':[0,0,1,1]}) #41)
+    numpy_observation, info = env.reset(seed=1002) #seed=40 #,options={'box_color':[1,0,0,.025]}) #seed=1000,options={'box_size':[0.02,0.02,0.02],'box_color':[0,0,1,1]}) #41)
 else:
     policy.reset()
     numpy_observation, info = env.reset(seed=42) #seed=40 #,options={'box_color':[1,0,0,.025]}) #seed=1000,options={'box_size':[0.02,0.02,0.02],'box_color':[0,0,1,1]}) #41)
