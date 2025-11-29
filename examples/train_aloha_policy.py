@@ -15,7 +15,7 @@
 """This scripts demonstrates how to train Diffusion Policy on the PushT environment.
 
 Once you have trained a model with this script, you can try to evaluate it on
-examples/2_evaluate_pretrained_policy.py
+examples/evaluate_pretrained_aloha_policy.py
 """
 
 from pathlib import Path
@@ -34,28 +34,18 @@ from lerobot.common.policies.diffusion.modeling_diffusion import DiffusionPolicy
 
 def main():
     # Create a directory to store the training checkpoint.
-    #output_directory = Path("outputs/train/example_aloha_act5")
-    #output_directory = Path("lerobot/scripts/outputs/train/example_aloha_act7")
-    #output_directory = Path("lerobot/scripts/outputs/train/example_aloha_act9")
-    output_directory = Path("lerobot/scripts/outputs/train/example_aloha_diffusion2")
-    #output_directory = Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act_ex1")
+    output_directory = Path("lerobot/scripts/outputs/train/train_aloha_act1")
     output_directory.mkdir(parents=True, exist_ok=False)
 
     repo_id = "lerobot/aloha_sim_transfer_cube_human"
-    root = None
-    #repo_id = "ANRedlich/eval_act_trossen_ai_stationary_test_01"
-    #root = "lerobot/scripts/dataset/eval3"
-    #repo_id = "ANRedlich/eval_act_trossen_ai_stationary_test_06" #BIG DATASET
-    #root = "lerobot/scripts/dataset/eval6" #BIG DATASET
-    #repo_id="ANRedlich/trossen_ai_stationary_test_07"
-    #root="lerobot/scripts/dataset/experiment5"
+    root = None #or local directory
 
     # # Select your device
     device = torch.device("cuda")
 
     # Number of offline training steps (we'll only do offline training for this example.)
     # Adjust as you prefer. 5000 steps are needed to get something worth evaluating.
-    training_steps = 20000 #5000
+    training_steps = 5000
     log_freq = 1
 
     # When starting from scratch (i.e. not from a pretrained policy), we need to specify 2 things before
@@ -115,18 +105,6 @@ def main():
             "action": [i / dataset_metadata.fps for i in cfg.action_delta_indices],
         }
 
-    # In this case with the standard configuration for Act Policy, it is equivalent to this:
-    # delta_timestamps = {
-    #     # Load the previous image and state at -0.1 seconds before current frame,
-    #     # then load current image and state corresponding to 0.0 second.
-    #     "observation.image": [-0.1, 0.0],
-    #     "observation.state": [-0.1, 0.0],
-    #     # Load the previous action (-0.1), the next action to be executed (0.0),
-    #     # and 14 future actions with a 0.1 seconds spacing. All these actions will be
-    #     # used to supervise the policy.
-    #     "action": [-0.1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4],
-    # }
-
     # We can then instantiate the dataset with these delta_timestamps configuration.
     dataset = LeRobotDataset(repo_id=repo_id,root=root, delta_timestamps=delta_timestamps) #"lerobot/aloha_sim_transfer_cube_human"
 
@@ -146,13 +124,13 @@ def main():
     dataloader = torch.utils.data.DataLoader(
         dataset,
         num_workers=4,
-        batch_size=64, #8 needed for trossen_staitionary_ai because of size
+        batch_size=64,
         shuffle=True,
         pin_memory=device.type != "cpu",
         drop_last=True,
     )
 
-    # Dataloader info
+    # Dataloader info (optional)
     if 0:
         print("\n=== Checking Image Format from DataLoader ===")
         test_batch = next(iter(dataloader))

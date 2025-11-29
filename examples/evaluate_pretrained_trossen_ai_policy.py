@@ -50,21 +50,22 @@ device = "cuda"
 ##id = "gym_aloha/AlohaTransferCube-v0"
 #choose either the simulated robot:
 id = "gym_aloha/TrossenAIStationaryTransferCube-v0"
-#or the end effector controlled simulator, used to create datasets:
+#or the end effector controlled simulator, which uses the waypoint scripted_policy.py from https://github.com/TrossenRobotics/trossen_arm_mujoco:
 #id = "gym_aloha/TrossenAIStationaryTransferCubeEE-v0"
 
 # Provide the [hugging face repo id](https://huggingface.co/ANRedlich/trossen_ai_stationary_sim_act7):
 # OR a path to a local outputs/train folder:
 
-#pretrained_policy_path=Path("ANRedlich/trossen_ai_stationary_sim_act7") #from train.py on sim NRedlich/trossen_ai_stationary_sim_transfer_40mm_cube_07
+pretrained_policy_path=Path("ANRedlich/trossen_ai_stationary_sim_act7") #from train.py on sim NRedlich/trossen_ai_stationary_sim_transfer_40mm_cube_07
 #pretrained_policy_path=Path("ANRedlich/trossen_ai_stationary_sim_act8") #from train.py on sim ANRedlich/trossen_ai_stationary_sim_transfer_40mm_cube_08
 #pretrained_policy_path=Path("ANRedlich/trossen_ai_stationary_sim_act10") #from train.py on sim ANRedlich/trossen_ai_stationary_sim_transfer_40mm_cube_10
 pretrained_policy_path=Path("ANRedlich/trossen_ai_stationary_sim_act13") #from train.py on sim ANRedlich/trossen_ai_stationary_sim_transfer_40mm_cube_13
 #this policy wasn learned from a real robot dataset. Used here to test real -> sim:
 #pretrained_policy_path=Path("ANRedlich/trossen_ai_stationary_real_act2_3") #from train.py on real ANRedlich/trossen_ai_stationary_transfer_40mm_cube_02
 
-#these are our local model and dataset paths, which are not, however, in the distribution
+#these are additional local models, trained using train.py, however, not in the distribution
 #pretrained_policy_path=Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act7/checkpoints/last/pretrained_model") #from train.py on dataset.root=lerobot/scripts/dataset/eval7
+#pretrained_policy_path=Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act7_2/checkpoints/last/pretrained_model") #from train.py on dataset.root=lerobot/scripts/dataset/eval7
 #pretrained_policy_path=Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act8/checkpoints/last/pretrained_model") #from train.py on dataset.root=lerobot/scripts/dataset/eval8
 #pretrained_policy_path=Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act10/checkpoints/last/pretrained_model") #from train.py on dataset.root=lerobot/scripts/dataset/eval10
 #pretrained_policy_path=Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act13/checkpoints/last/pretrained_model") #from train.py on dataset.root=lerobot/scripts/dataset/eval13
@@ -145,7 +146,7 @@ if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube_ee':
     numpy_observation, info = env.reset(seed=41)
 elif env.unwrapped.task == 'trossen_ai_stationary_transfer_cube':
     policy.reset()
-    numpy_observation, info = env.reset(seed=1002)
+    numpy_observation, info = env.reset(seed=1000) #2)
 
 if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube_ee':
     ts=dm_env.TimeStep(step_type=dm_env.StepType.FIRST,reward=None,discount=None,observation=info['raw_obs'])

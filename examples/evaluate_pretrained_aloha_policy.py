@@ -45,9 +45,9 @@ output_directory.mkdir(parents=True, exist_ok=True)
 # Select your device
 device = "cuda"
 
-# Initialize evaluation environment to render two observation types:
-# an image of the scene and state/position cube position=[-0.02472291 -0.13617125  0.0125    ]of the agent. The environment
-# also automatically stops running after 300 interactions/steps.
+# Initialize evaluation environment with two observation types:
+# an image of the scene with a red cube at random positions and state/position of the robot/agent. The environment
+# also automatically stops running after 400 interactions/steps.
 env = gym.make(
     "gym_aloha/AlohaTransferCube-v0",
     obs_type="pixels_agent_pos",
@@ -58,10 +58,14 @@ env = gym.make(
 # OR a path to a local outputs/train folder.
 if env.unwrapped.task == 'transfer_cube':
     pretrained_policy_path = Path("lerobot/act_aloha_sim_transfer_cube_human") #seed=41 -> step=266,270
-    #the policies below were trained using train_aloha_policy.py or train.py, these are not in the distribution:
-    #pretrained_policy_path = Path("outputs/train/act_aloha_transfer/checkpoints/last/pretrained_model") #from train.py seed=41 -> step=264,266
-    #pretrained_policy_path = Path("lerobot/scripts/outputs/train/example_aloha_act2") #from train_aloha_policy seed=42 -> step=293
-    #pretrained_policy_path = Path("lerobot/scripts/outputs/train/example_aloha_act6") #from train_aloha_policy seed=42 -> step=293, 281
+    #the policy below was trained using train.py, it is not in the distribution.
+    #run train.py to create your own:
+    #pretrained_policy_path = Path("outputs/train/act_aloha_transfer/checkpoints/last/pretrained_model")
+    #the policies below were trained using train_aloha_policy.py, they are not in the distribution.
+    #run train_aloha_policy.py to create your own:
+    #pretrained_policy_path = Path("lerobot/scripts/outputs/train/example_aloha_act2") #from train_aloha_policy
+    #pretrained_policy_path = Path("lerobot/scripts/outputs/train/example_aloha_act6") #from train_aloha_policy
+    #pretrained_policy_path = Path("lerobot/scripts/outputs/train/train_aloha_act1") #from train_aloha_policy
     config_path = pretrained_policy_path/"config.json"
     if config_path.exists():
         with open(config_path, 'r') as f:
@@ -147,9 +151,6 @@ while not done:
 
     # Predict the next action with respect to the current observation
     with torch.inference_mode():
-        ##if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube_ee':
-        ##    action = policy(ts)
-        ##else:
         action = policy.select_action(observation)
 
     # Prepare the action for the environment

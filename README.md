@@ -40,7 +40,18 @@
   <p>Want to take it to the next level? Make your SO-100 mobile by building LeKiwi!</p>
   <p>Check out the <a href="https://github.com/huggingface/lerobot/blob/main/examples/11_use_lekiwi.md">LeKiwi tutorial</a> and bring your robot to life on wheels.</p>
 
+<img src="trossen_ai_stationary_transfer_cube.gif" width="70%" alt="TrossenAI Stationary TransferCube demo"/>
+
+<img src="trossen_box_transfer_real_01.gif" width="70%" alt="TrossenAI Stationary TransferCube demo"/>
+
+<img src="trossen_pop_lid_real_06.gif" width="70%" alt="TrossenAI Stationary TransferCube demo"/>
+
+<img src="trossen_pour_box_real_05.gif" width="70%" alt="TrossenAI Stationary TransferCube demo"/>
+
+<!--
   <img src="media/lekiwi/kiwi.webp?raw=true" alt="LeKiwi mobile robot" title="LeKiwi mobile robot" width="50%">
+-->
+
 </div>
 
 <br/>
