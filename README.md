@@ -1,3 +1,4 @@
+<!--
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="media/lerobot-logo-thumbnail.png">
@@ -21,12 +22,61 @@
 [![Discord](https://dcbadge.vercel.app/api/server/C5P34WJ68S?style=flat)](https://discord.gg/s3KuuzsPFb)
 
 </div>
+-->
 
+<!--
 <h2 align="center">
     <p><a href="https://github.com/huggingface/lerobot/blob/main/examples/10_use_so100.md">
         Build Your Own SO-100 Robot!</a></p>
 </h2>
+-->
+<h2 align="center">
+    <p>LeRobot</p>
+</h2>
 
+Note: this readme is under construction.  
+
+Hardware: all simulation and training were performed on a System76 desktop with an Nvidia RTX 5090 with 32GB memory. Some simulations may not run on smaller GPUs or may require reducing batch sizes.
+
+Contact: norman@anrrobot.com  
+
+#### Examples of pretrained ACT models on the real Trossen AI Stationary robot:
+
+(datasets and models available on huggingface in lerobot format, see below)
+
+<img src="trossen_box_transfer_real_01.gif" width="70%" alt="TrossenAI Stationary TransferCube demo"/>
+
+<img src="trossen_pop_lid_real_06.gif" width="70%" alt="TrossenAI Stationary TransferCube demo"/>
+
+<img src="trossen_pour_box_real_05.gif" width="70%" alt="TrossenAI Stationary TransferCube demo"/>
+
+This fork adds:
+
+[Trossen AI Stationary robot](https://www.trossenrobotics.com/) sim to real and real to sim capability using the added TrossenAIStationary robot virtual environments in https://github.com/anredlich/gym-aloha.
+
+Tasks supported so far:   
+TrossenAIStationaryTransferCube-v0   
+TrossenAIStationaryTransferCubeEE-v0 (EE=end effector)    
+
+control_sim_robot.py:
+creates simulated Trossen AI Stationary databases in standard lerobot format using the added scripted_policy.py adapted from https://github.com/TrossenRobotics/trossen_arm_mujoco.
+replays simulated dataset episodes
+
+train.py 
+train policies with Trossen AI Stationary evals
+
+eval.py
+evaluate policies with Trossen AI Stationary env
+
+new example files:
+evaluate_pretrained_aloha_policy.py
+evaluate_pretrained_trossen_ai_policy.py
+train_aloha_policy.py
+train_trossen_ai_policy.py (has bugs, use train.py for now)  
+
+<br>
+
+<!--
 <div align="center">
   <img src="media/so100/leader_follower.webp?raw=true" alt="SO-100 leader and follower arms" title="SO-100 leader and follower arms" width="50%">
 
@@ -40,22 +90,22 @@
   <p>Want to take it to the next level? Make your SO-100 mobile by building LeKiwi!</p>
   <p>Check out the <a href="https://github.com/huggingface/lerobot/blob/main/examples/11_use_lekiwi.md">LeKiwi tutorial</a> and bring your robot to life on wheels.</p>
 
+</div>
+-->
+
+#### Example of pretrained ACT model on simulated Trossen AI Stationary environment
+
 <img src="trossen_ai_stationary_transfer_cube.gif" width="70%" alt="TrossenAI Stationary TransferCube demo"/>
-
-<img src="trossen_box_transfer_real_01.gif" width="70%" alt="TrossenAI Stationary TransferCube demo"/>
-
-<img src="trossen_pop_lid_real_06.gif" width="70%" alt="TrossenAI Stationary TransferCube demo"/>
-
-<img src="trossen_pour_box_real_05.gif" width="70%" alt="TrossenAI Stationary TransferCube demo"/>
 
 <!--
   <img src="media/lekiwi/kiwi.webp?raw=true" alt="LeKiwi mobile robot" title="LeKiwi mobile robot" width="50%">
 -->
 
-</div>
+
 
 <br/>
 
+<!--
 <h3 align="center">
     <p>LeRobot: State-of-the-art AI for real-world robotics</p>
 </h3>
@@ -85,61 +135,42 @@
     <td align="center">Diffusion policy on PushT env</td>
   </tr>
 </table>
+-->
 
 ### Acknowledgment
 
-- Thanks to Tony Zhao, Zipeng Fu and colleagues for open sourcing ACT policy, ALOHA environments and datasets. Ours are adapted from [ALOHA](https://tonyzhaozh.github.io/aloha) and [Mobile ALOHA](https://mobile-aloha.github.io).
-- Thanks to Cheng Chi, Zhenjia Xu and colleagues for open sourcing Diffusion policy, Pusht environment and datasets, as well as UMI datasets. Ours are adapted from [Diffusion Policy](https://diffusion-policy.cs.columbia.edu) and [UMI Gripper](https://umi-gripper.github.io).
-- Thanks to Nicklas Hansen, Yunhai Feng and colleagues for open sourcing TDMPC policy, Simxarm environments and datasets. Ours are adapted from [TDMPC](https://github.com/nicklashansen/tdmpc) and [FOWM](https://www.yunhaifeng.com/FOWM).
-- Thanks to Antonio Loquercio and Ashish Kumar for their early support.
-- Thanks to [Seungjae (Jay) Lee](https://sjlee.cc/), [Mahi Shafiullah](https://mahis.life/) and colleagues for open sourcing [VQ-BeT](https://sjlee.cc/vq-bet/) policy and helping us adapt the codebase to our repository. The policy is adapted from [VQ-BeT repo](https://github.com/jayLEE0301/vq_bet_official).
+This branch forked from https://github.com/Interbotix/lerobot and adapted from https://github.com/TrossenRobotics/trossen_arm_mujoco
 
+See [Trossen AI Stationary robot](https://www.trossenrobotics.com/)
 
 ## Installation
 
-Download our source code:
-```bash
-git clone https://github.com/huggingface/lerobot.git
-cd lerobot
-```
-
-Create a virtual environment with Python 3.10 and activate it, e.g. with [`miniconda`](https://docs.anaconda.com/free/miniconda/index.html):
+Create a virtual environment with Python 3.10 and activate it:
 ```bash
 conda create -y -n lerobot python=3.10
 conda activate lerobot
-```
-
-When using `miniconda`, if you don't have `ffmpeg` in your environment:
-```bash
 conda install ffmpeg
 ```
 
-Install 🤗 LeRobot:
+Download and install this fork:
 ```bash
+git clone https://github.com/anredlich/lerobot.git
+cd lerobot
 pip install --no-binary=av -e .
 ```
 
-> **NOTE:** If you encounter build errors, you may need to install additional dependencies (`cmake`, `build-essential`, and `ffmpeg libs`). On Linux, run:
-`sudo apt-get install cmake build-essential python-dev pkg-config libavformat-dev libavcodec-dev libavdevice-dev libavutil-dev libswscale-dev libswresample-dev libavfilter-dev pkg-config`. For other systems, see: [Compiling PyAV](https://pyav.org/docs/develop/overview/installation.html#bring-your-own-ffmpeg)
-
-For simulations, 🤗 LeRobot comes with gymnasium environments that can be installed as extras:
-- [aloha](https://github.com/huggingface/gym-aloha)
-- [xarm](https://github.com/huggingface/gym-xarm)
-- [pusht](https://github.com/huggingface/gym-pusht)
-
-For instance, to install 🤗 LeRobot with aloha and pusht, use:
+For simulation with gym-aloha (TrossenAI Stationary):
 ```bash
-pip install --no-binary=av -e ".[aloha, pusht]"
+pip install git+https://github.com/anredlich/gym-aloha.git
 ```
 
-To use [Weights and Biases](https://docs.wandb.ai/quickstart) for experiment tracking, log in with
-```bash
-wandb login
-```
-
-(note: you will also need to enable WandB in the configuration. See below.)
+For detailed installation help (build errors, ffmpeg, other simulations, Weights and Biases), see the [original HuggingFace LeRobot installation guide](https://github.com/huggingface/lerobot#installation).
 
 ## Walkthrough
+
+added in this fork:   
+control_sim_robot.py  
+scripted_policy.py
 
 ```
 .
@@ -163,6 +194,44 @@ wandb login
 └── tests                 # contains pytest utilities for continuous integration
 ```
 
+### Real and Simulated Trossen AI Stationary datasets
+
+https://huggingface.co    
+
+(visualize using visualize_dataset.py or at https://huggingface.co/spaces/lerobot/visualize_dataset)  
+
+Real Robot:   
+ANRedlich/trossen_ai_stationary_transfer_20mm_cube_01 
+ANRedlich/trossen_ai_stationary_transfer_40mm_cube_02   
+ANRedlich/trossen_ai_stationary_transfer_multi_cube_03   
+ANRedlich/trossen_ai_stationary_place_lids_04   
+ANRedlich/trossen_ai_stationary_pour_box_05   
+ANRedlich/trossen_ai_stationary_pop_lid_06  
+
+Simulated Robot:  
+ANRedlich/trossen_ai_stationary_sim_transfer_40mm_cube_07 
+ANRedlich/trossen_ai_stationary_sim_transfer_40mm_cube_08 
+ANRedlich/trossen_ai_stationary_sim_transfer_40mm_cube_10   
+ANRedlich/trossen_ai_stationary_sim_transfer_40mm_cube_13   
+
+### Real and Simulated Trossen AI Stationary ACT models:
+
+https://huggingface.co    
+
+Real Robot: (see videos up top)   
+ANRedlich/trossen_ai_stationary_real_act2_3   
+ANRedlich/trossen_ai_stationary_real_act5   
+ANRedlich/trossen_ai_stationary_real_act6   
+(for real to sim try act_trossen_ai_stationary_real_02_3 in examples/evaluate_pretrained_trossen_ai_policy.py)   
+
+Simulated Robot:    
+(run in eval.py or examples/evaluate_pretrained_trossen_ai_policy.py)   
+ANRedlich/trossen_ai_stationary_sim_act7   
+ANRedlich/trossen_ai_stationary_sim_act8    
+ANRedlich/trossen_ai_stationary_sim_act10   
+ANRedlich/trossen_ai_stationary_sim_act13   
+(... act13 is best sim to real policy, but very sensitive to conditions)  
+
 ### Visualize datasets
 
 Check out [example 1](./examples/1_load_lerobot_dataset.py) that illustrates how to use our dataset class which automatically downloads data from the Hugging Face hub.
@@ -170,14 +239,14 @@ Check out [example 1](./examples/1_load_lerobot_dataset.py) that illustrates how
 You can also locally visualize episodes from a dataset on the hub by executing our script from the command line:
 ```bash
 python lerobot/scripts/visualize_dataset.py \
-    --repo-id lerobot/pusht \
+    --repo-id ANRedlich/trossen_ai_stationary_pour_box_05 \
     --episode-index 0
 ```
 
-or from a dataset in a local folder with the `root` option and the `--local-files-only` (in the following case the dataset will be searched for in `./my_local_data_dir/lerobot/pusht`)
+or from a dataset in a local folder with the `root` option:
 ```bash
 python lerobot/scripts/visualize_dataset.py \
-    --repo-id lerobot/pusht \
+    --repo-id ANRedlich/trossen_ai_stationary_pour_box_05\
     --root ./my_local_data_dir \
     --local-files-only 1 \
     --episode-index 0
@@ -236,20 +305,57 @@ A `LeRobotDataset` is serialised using several widespread file formats for each 
 
 Dataset can be uploaded/downloaded from the HuggingFace hub seamlessly. To work on a local dataset, you can specify its location with the `root` argument if it's not in the default `~/.cache/huggingface/lerobot` location.
 
+### Creating a simulated robot dataset
+
+```bash
+python lerobot/scripts/control_sim_robot.py \
+    --robot.type=trossen_ai_stationary \
+    --env.type=aloha \
+    --env.task=gym_aloha/TrossenAIStationaryTransferCubeEE-v0 \
+    --env.box_size=[0.02,0.02,0.02] \
+    --env.box_color=[1,0,0,1] \
+    --env.tabletop=my_desktop \
+    --control.type=record \
+    --control.fps=30 \
+    --control.single_task='Recording evaluation episode using Trossen AI Stationary.'  \
+    --control.repo_id=ANRedlich/eval_act_trossen_ai_stationary_test_100 \
+    --control.root=lerobot/scripts/dataset/eval100 \
+    --control.tags=[\"tutorial\"] \
+    --control.warmup_time_s=5 \
+    --control.episode_time_s=30 \
+    --control.reset_time_s=30 \
+    --control.num_episodes=100 \
+    --control.push_to_hub=false \
+    --control.policy.path=scripted_policy
+```
+This will create a local dataset in the root directory. set push_to_hub=true to send to huggingface instead.
+
+### Creating a real robot dataset
+
+see [Trossen AI Stationary robot](https://www.trossenrobotics.com/)
+
 ### Evaluate a pretrained policy
 
-Check out [example 2](./examples/2_evaluate_pretrained_policy.py) that illustrates how to download a pretrained policy from Hugging Face hub, and run an evaluation on its corresponding environment.
-
-We also provide a more capable script to parallelize the evaluation over multiple environments during the same rollout. Here is an example with a pretrained model hosted on [lerobot/diffusion_pusht](https://huggingface.co/lerobot/diffusion_pusht):
 ```bash
 python lerobot/scripts/eval.py \
-    --policy.path=lerobot/diffusion_pusht \
-    --env.type=pusht \
-    --eval.batch_size=10 \
-    --eval.n_episodes=10 \
+    --policy.path=ANRedlich/trossen_ai_stationary_sim_act7 \
+    --env.type=aloha \
+    --env.episode_length=500 \
+    --env.task=TrossenAIStationaryTransferCube-v0 \
+    --eval.n_episodes=50 \
+    --eval.batch_size=50 \
+    --env.box_size=[0.02,0.02,0.02] \
     --policy.use_amp=false \
     --policy.device=cuda
 ```
+Above should have a success_rate ~=86.0%.   
+
+Or run:   
+```bash
+python examples/evaluate_pretrained_trossen_ai_policy.py
+```
+
+For the env variables used to learn other simulated models, look inside evaluate_pretrained_trossen_ai_policy.py.
 
 Note: After training your own policy, you can re-evaluate the checkpoints with:
 
@@ -261,49 +367,42 @@ See `python lerobot/scripts/eval.py --help` for more instructions.
 
 ### Train your own policy
 
-Check out [example 3](./examples/3_train_policy.py) that illustrate how to train a model using our core library in python, and [example 4](./examples/4_train_policy_with_script.md) that shows how to use our training script from command line.
-
-To use wandb for logging training and evaluation curves, make sure you've run `wandb login` as a one-time setup step. Then, when running the training command above, enable WandB in the configuration by adding `--wandb.enable=true`.
-
-A link to the wandb logs for the run will also show up in yellow in your terminal. Here is an example of what they look like in your browser. Please also check [here](./examples/4_train_policy_with_script.md#typical-logs-and-metrics) for the explanation of some commonly used metrics in logs.
-
-![](media/wandb.png)
-
-Note: For efficiency, during training every checkpoint is evaluated on a low number of episodes. You may use `--eval.n_episodes=500` to evaluate on more episodes than the default. Or, after training, you may want to re-evaluate your best checkpoints on more episodes or change the evaluation settings. See `python lerobot/scripts/eval.py --help` for more instructions.
-
-#### Reproduce state-of-the-art (SOTA)
-
-We provide some pretrained policies on our [hub page](https://huggingface.co/lerobot) that can achieve state-of-the-art performances.
-You can reproduce their training by loading the config from their run. Simply running:
 ```bash
-python lerobot/scripts/train.py --config_path=lerobot/diffusion_pusht
-```
-reproduces SOTA results for Diffusion Policy on the PushT task.
-
-## Contribute
-
-If you would like to contribute to 🤗 LeRobot, please check out our [contribution guide](https://github.com/huggingface/lerobot/blob/main/CONTRIBUTING.md).
-
-<!-- ### Add a new dataset
-
-To add a dataset to the hub, you need to login using a write-access token, which can be generated from the [Hugging Face settings](https://huggingface.co/settings/tokens):
-```bash
-huggingface-cli login --token ${HUGGINGFACE_TOKEN} --add-to-git-credential
+python lerobot/scripts/train.py \
+    --dataset.repo_id=ANRedlich/trossen_ai_stationary_sim_transfer_40mm_cube_07 \
+    --output_dir=lerobot/scripts/outputs/train/trossen_ai_stationary_act7_3 \
+    --job_name=trossen_ai_stationary_act7_3 \
+    --policy.type=act \
+    --policy.device=cuda \
+    --env.type=aloha \
+    --env.episode_length=500 \
+    --env.task=TrossenAIStationaryTransferCube-v0 \
+    --eval.n_episodes=50 \
+    --eval.batch_size=50 \
+    --env.box_size=[0.02,0.02,0.02] \
+    --steps=100000 \
+    --save_freq=10000 \
+    --eval_freq=10000
 ```
 
-Then point to your raw dataset folder (e.g. `data/aloha_static_pingpong_test_raw`), and push your dataset to the hub with:
+Then use eval.py or evaluate_pretrained_trossen_ai_policy.py with:    
+--policy.path=lerobot/scripts/outputs/train/trossen_ai_stationary_act7_3/checkpoints/last/pretrained_model    
+or    
+pretrained_policy_path=Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act7_3/checkpoints/last/pretrained_model")    
+
+For other examples, look inside evaluate_pretrained_trossen_ai_policy.py for the environmental variables corresonding to act8 <-> repo_id=...8
+
+Also, try for the original aloha:
+
+Run:
 ```bash
-python lerobot/scripts/push_dataset_to_hub.py \
---raw-dir data/aloha_static_pingpong_test_raw \
---out-dir data \
---repo-id lerobot/aloha_static_pingpong_test \
---raw-format aloha_hdf5
+python examples/train_aloha_policy.py
 ```
-
-See `python lerobot/scripts/push_dataset_to_hub.py --help` for more instructions.
-
-If your dataset format is not supported, implement your own in `lerobot/common/datasets/push_dataset_to_hub/${raw_format}_format.py` by copying examples like [pusht_zarr](https://github.com/huggingface/lerobot/blob/main/lerobot/common/datasets/push_dataset_to_hub/pusht_zarr_format.py), [umi_zarr](https://github.com/huggingface/lerobot/blob/main/lerobot/common/datasets/push_dataset_to_hub/umi_zarr_format.py), [aloha_hdf5](https://github.com/huggingface/lerobot/blob/main/lerobot/common/datasets/push_dataset_to_hub/aloha_hdf5_format.py), or [xarm_pkl](https://github.com/huggingface/lerobot/blob/main/lerobot/common/datasets/push_dataset_to_hub/xarm_pkl_format.py). -->
-
+Note that 
+```bash
+python examples/train_trossen_ai_policy.py
+```
+seems to have a bug, so it is not reliable. For now use train.py which is faster and more robust anyway.
 
 ### Add a pretrained policy
 
@@ -320,31 +419,6 @@ huggingface-cli upload ${hf_user}/${repo_name} path/to/pretrained_model
 ```
 
 See [eval.py](https://github.com/huggingface/lerobot/blob/main/lerobot/scripts/eval.py) for an example of how other people may use your policy.
-
-
-### Improve your code with profiling
-
-An example of a code snippet to profile the evaluation of a policy:
-```python
-from torch.profiler import profile, record_function, ProfilerActivity
-
-def trace_handler(prof):
-    prof.export_chrome_trace(f"tmp/trace_schedule_{prof.step_num}.json")
-
-with profile(
-    activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
-    schedule=torch.profiler.schedule(
-        wait=2,
-        warmup=2,
-        active=3,
-    ),
-    on_trace_ready=trace_handler
-) as prof:
-    with record_function("eval_policy"):
-        for i in range(num_episodes):
-            prof.step()
-            # insert code to profile, potentially whole body of eval_policy function
-```
 
 ## Citation
 
@@ -399,6 +473,3 @@ Additionally, if you are using any of the particular policy architecture, pretra
   year={2024}
 }
 ```
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=huggingface/lerobot&type=Timeline)](https://star-history.com/#huggingface/lerobot&Timeline)
