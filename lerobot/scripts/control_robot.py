@@ -139,6 +139,7 @@ import logging
 import time
 from dataclasses import asdict
 from pprint import pformat
+import random
 
 # from safetensors.torch import load_file, save_file
 from lerobot.common.datasets.lerobot_dataset import LeRobotDataset
@@ -161,6 +162,7 @@ from lerobot.common.robot_devices.control_utils import (
     sanity_check_dataset_robot_compatibility,
     stop_recording,
     warmup_record,
+    next_task,
 )
 from lerobot.common.robot_devices.robots.utils import Robot, make_robot_from_config
 from lerobot.common.robot_devices.utils import busy_wait, safe_disconnect
@@ -285,6 +287,16 @@ def record(
 
     listener, events = init_keyboard_listener()
 
+    #anr hack: multi-tasking needs to be formalized and added to control_robot options
+    multi_task_prompts=False
+    if multi_task_prompts:
+        random.seed(100)
+        task_template = "pick up {} cube and place in {} pan"
+        cube_colors = ['red', 'yellow', 'blue', 'brown', 'pink']
+        pan_colors = ['yellow', 'silver']
+        task=next_task(task_template, cube_colors, pan_colors) #anr hack
+        #end anr hack
+
     # Execute a few seconds without recording to:
     # 1. teleoperate the robot to move it in starting position if no policy provided,
     # 2. give times to the robot devices to connect and start synchronizing,
@@ -292,6 +304,9 @@ def record(
     enable_teleoperation = policy is None
     log_say("Starting warmup", cfg.play_sounds)
     time.sleep(2)
+    if multi_task_prompts:
+        log_say(f"Setup for task {task}", cfg.play_sounds) #anr
+        time.sleep(2) #anr
     warmup_record(robot, events, enable_teleoperation, cfg.warmup_time_s, cfg.display_cameras, cfg.fps)
     log_say("Finished warmup", cfg.play_sounds)
     time.sleep(2)
@@ -305,6 +320,12 @@ def record(
             break
 
         log_say(f"Recording episode {dataset.num_episodes}", cfg.play_sounds)
+        single_task=cfg.single_task
+        if multi_task_prompts:
+            time.sleep(2) #anr
+            log_say(f"{task}", cfg.play_sounds) #anr
+            time.sleep(2) #anr
+            single_task=task
         record_episode(
             robot=robot,
             dataset=dataset,
@@ -313,7 +334,7 @@ def record(
             display_cameras=cfg.display_cameras,
             policy=policy,
             fps=cfg.fps,
-            single_task=cfg.single_task,
+            single_task=single_task, #cfg.single_task, anr
         )
         log_say(f"Finished recording episode {dataset.num_episodes}", cfg.play_sounds)
         time.sleep(2)
@@ -325,7 +346,13 @@ def record(
         if not events["stop_recording"] and (
             (recorded_episodes < cfg.num_episodes - 1) or events["rerecord_episode"]
         ):
+            if multi_task_prompts:
+                task=next_task(task_template, cube_colors, pan_colors) #anr
+                log_say(f"Setup for task {task}", cfg.play_sounds) #anr
+                time.sleep(4) #anr
             log_say("Reset the environment", cfg.play_sounds)
+            if multi_task_prompts:
+                time.sleep(2) #anr
             reset_environment(robot, events, cfg.reset_time_s, cfg.fps)
             log_say("Stop resetting the environment", cfg.play_sounds)
             time.sleep(2)

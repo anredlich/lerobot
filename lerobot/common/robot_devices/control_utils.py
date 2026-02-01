@@ -23,6 +23,7 @@ import traceback
 from contextlib import nullcontext
 from copy import copy
 from functools import cache
+import random
 
 import cv2
 import torch
@@ -267,10 +268,14 @@ def control_loop(
             frame = {**observation, **action, "task": single_task}
             dataset.add_frame(frame)
 
+        #save_dir = "/home/trossen-ai/lerobot/lerobot/scripts/saved_images"
         if display_cameras and not is_headless():
             image_keys = [key for key in observation if "image" in key]
             for key in image_keys:
                 cv2.imshow(key, cv2.cvtColor(observation[key].numpy(), cv2.COLOR_RGB2BGR))
+                #save images
+                #success = cv2.imwrite(f"{save_dir}/{key}.jpg", cv2.cvtColor(observation[key].numpy(), cv2.COLOR_RGB2BGR))
+                #print(f"Saved {key}: {success}")
             cv2.waitKey(1)
 
         if fps is not None:
@@ -354,3 +359,11 @@ def sanity_check_dataset_robot_compatibility(
         raise ValueError(
             "Dataset metadata compatibility check failed with mismatches:\n" + "\n".join(mismatches)
         )
+
+def next_task(template, *lists):
+    #example usage:
+    #task_template = "pick up {} cube and place in {} pan"
+    #cube_colors = ['red', 'yellow', 'blue']
+    #pan_colors = ['green', 'black']
+    #task = next_task(task_template, cube_colors, pan_colors)
+    return template.format(*[random.choice(l) for l in lists])

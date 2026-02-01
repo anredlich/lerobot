@@ -60,8 +60,8 @@ pretrained_policy_path=Path("ANRedlich/trossen_ai_stationary_sim_act7") #from tr
 #pretrained_policy_path=Path("ANRedlich/trossen_ai_stationary_sim_act8") #from train.py on sim ANRedlich/trossen_ai_stationary_sim_transfer_40mm_cube_08
 #pretrained_policy_path=Path("ANRedlich/trossen_ai_stationary_sim_act10") #from train.py on sim ANRedlich/trossen_ai_stationary_sim_transfer_40mm_cube_10
 pretrained_policy_path=Path("ANRedlich/trossen_ai_stationary_sim_act13") #from train.py on sim ANRedlich/trossen_ai_stationary_sim_transfer_40mm_cube_13
-#this policy wasn learned from a real robot dataset. Used here to test real -> sim:
-#pretrained_policy_path=Path("ANRedlich/trossen_ai_stationary_real_act2_3") #from train.py on real ANRedlich/trossen_ai_stationary_transfer_40mm_cube_02
+#this policy was learned from a real robot dataset. Used here to test real -> sim:
+pretrained_policy_path=Path("ANRedlich/trossen_ai_stationary_real_act2_3") #from train.py on real ANRedlich/trossen_ai_stationary_transfer_40mm_cube_02
 
 #these are additional local models, trained using train.py, however, not in the distribution
 #pretrained_policy_path=Path("lerobot/scripts/outputs/train/trossen_ai_stationary_act7/checkpoints/last/pretrained_model") #from train.py on dataset.root=lerobot/scripts/dataset/eval7
@@ -146,7 +146,10 @@ if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube_ee':
     numpy_observation, info = env.reset(seed=41)
 elif env.unwrapped.task == 'trossen_ai_stationary_transfer_cube':
     policy.reset()
-    numpy_observation, info = env.reset(seed=1000) #2)
+    if "act2_3" in pretrained_policy_path.name:
+        numpy_observation, info = env.reset(seed=1002)
+    else:
+        numpy_observation, info = env.reset(seed=1000)
 
 if env.unwrapped.task == 'trossen_ai_stationary_transfer_cube_ee':
     ts=dm_env.TimeStep(step_type=dm_env.StepType.FIRST,reward=None,discount=None,observation=info['raw_obs'])
