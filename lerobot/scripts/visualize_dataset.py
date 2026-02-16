@@ -150,6 +150,13 @@ def visualize_dataset(
             rr.set_time_sequence("frame_index", batch["frame_index"][i].item())
             rr.set_time_seconds("timestamp", batch["timestamp"][i].item())
 
+            # Display frame info and task
+            task_idx = batch["task_index"][i].item()
+            task_str = dataset.meta.tasks[task_idx]
+            frame_idx = batch["frame_index"][i].item()
+            rr.log("info/task", rr.TextDocument(f"Task: {task_str}"))
+            rr.log("info/frame", rr.TextDocument(f"Frame: {frame_idx}"))
+
             # display each camera image
             for key in dataset.meta.camera_keys:
                 # TODO(rcadene): add `.compress()`? is it lossless?
@@ -201,11 +208,17 @@ def main():
         required=True,
         help="Name of hugging face repository containing a LeRobotDataset dataset (e.g. `lerobot/pusht`).",
     )
+    # parser.add_argument(
+    #     "--episode-index",
+    #     type=int,
+    #     required=True,
+    #     help="Episode to visualize.",
+    # )
     parser.add_argument(
         "--episode-index",
-        type=int,
+        type=str,
         required=True,
-        help="Episode to visualize.",
+        help="Episode to visualize. Use a single number (e.g. 5) or a range [start,end] inclusive (e.g. [5,9]).",
     )
     parser.add_argument(
         "--root",
@@ -285,13 +298,22 @@ def main():
     logging.info("Loading dataset")
     dataset = LeRobotDataset(repo_id, root=root, tolerance_s=tolerance_s)
 
-    if args.episode_index<0:
-        max_index=-args.episode_index
-        for i in range(max_index):
-            args.episode_index=i
-            visualize_dataset(dataset, **vars(args))
+    # if args.episode_index<0:
+    #     max_index=-args.episode_index
+    #     for i in range(max_index):
+    #         args.episode_index=i
+    #         visualize_dataset(dataset, **vars(args))
+    # else:
+    #     visualize_dataset(dataset, **vars(args))
+    ep = kwargs.pop("episode_index")
+    if ep.startswith("[") and ep.endswith("]"):
+        start, end = ep[1:-1].split(",")
+        episode_indices = range(int(start), int(end) + 1)
     else:
-        visualize_dataset(dataset, **vars(args))
+        episode_indices = [int(ep)]
+
+    for ei in episode_indices:
+        visualize_dataset(dataset, episode_index=ei, **kwargs)
 
 if __name__ == "__main__":
     main()
