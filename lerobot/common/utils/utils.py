@@ -29,6 +29,12 @@ from gtts import gTTS
 import pygame
 import tempfile
 
+from kokoro_onnx import Kokoro
+import soundfile as sf
+import threading
+
+kokoro = Kokoro('/home/trossen-ai/models/kokoro/kokoro-v1.0.onnx', '/home/trossen-ai/models/kokoro/voices-v1.0.bin')
+
 def none_or_int(value):
     if value == "None":
         return None
@@ -192,6 +198,26 @@ def say_gtts(text, blocking=False, lang='en'):
     except Exception as e:
         print(f"Google TTS failed: {e}")
 
+def say_tts(text, blocking=False):
+    """Local TTS using Kokoro — no internet required"""
+    def _speak():
+        try:
+            samples, sample_rate = kokoro.create(text, voice='af_aoede', speed=0.85, lang='en-us') #af_aoede, af_bella, af_alloy
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as tmp_file:
+                sf.write(tmp_file.name, samples, sample_rate)
+            subprocess.run(
+                ['aplay', '-D', 'pulse', tmp_file.name],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+            )
+            os.unlink(tmp_file.name)
+        except Exception as e:
+            print(f"TTS failed: {e}")
+
+    if blocking:
+        _speak()
+    else:
+        threading.Thread(target=_speak, daemon=True).start()
+
 def say(text, blocking=False):
     system = platform.system()
 
@@ -224,7 +250,8 @@ def log_say(text, play_sounds, blocking=False):
     logging.info(text)
 
     if play_sounds:
-        say_gtts(text, blocking) #anr better text to voice
+        #say_gtts(text, blocking) #anr better text to voice, but on server
+        say_tts(text, blocking) #anr better text to voice, local
 
 
 def get_channel_first_image_shape(image_shape: tuple) -> tuple:
