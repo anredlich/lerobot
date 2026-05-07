@@ -4,5 +4,8 @@
 			"path": "."
 		}
 	],
-	"settings": {}
+	"settings": {
+        "python.defaultInterpreterPath": "/home/trossen-ai/miniconda3/envs/lerobot/bin/python",
+        "python.terminal.activateEnvironment": true
+    }	
 }

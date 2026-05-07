@@ -270,6 +270,7 @@ def record(
             image_writer_processes=cfg.num_image_writer_processes,
             image_writer_threads=cfg.num_image_writer_threads_per_camera * len(robot.cameras),
         )
+    logging.info(f"Dataset features: {dataset.features}")
 
     # Load pretrained policy
     policy = None if cfg.policy is None else make_policy(cfg.policy, ds_meta=dataset.meta)
@@ -432,7 +433,7 @@ def replay(
 @parser.wrap()
 def control_robot(cfg: ControlPipelineConfig):
     init_logging()
-    logging.info(pformat(asdict(cfg)))
+    #logging.info(pformat(asdict(cfg)))
 
     robot = make_robot_from_config(cfg.robot)
 

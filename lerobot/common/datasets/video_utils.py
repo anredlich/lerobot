@@ -290,7 +290,12 @@ def encode_video_frames(
 
     ffmpeg_cmd = ["ffmpeg"] + ffmpeg_args + [str(video_path)]
     # redirect stdin to subprocess.DEVNULL to prevent reading random keyboard inputs from terminal
-    subprocess.run(ffmpeg_cmd, check=True, stdin=subprocess.DEVNULL, stderr=subprocess.DEVNULL) #anr added stderr=... to suppress terminal output
+    #subprocess.run(ffmpeg_cmd, check=True, stdin=subprocess.DEVNULL, stderr=subprocess.DEVNULL) #anr added stderr=... to suppress terminal output
+    result = subprocess.run(ffmpeg_cmd, stdin=subprocess.DEVNULL, capture_output=True, text=True)
+    if result.returncode != 0:
+        print("FFMPEG STDERR:", result.stderr)
+        print("FFMPEG STDOUT:", result.stdout)
+        result.check_returncode()  # raises CalledProcessError like before
 
     if not video_path.exists():
         raise OSError(
