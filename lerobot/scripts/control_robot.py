@@ -241,6 +241,19 @@ def teleoperate(robot: Robot, cfg: TeleoperateControlConfig):
     )
     listener.stop()
 
+def hold_leaders(robot):
+    """Freeze each leader at its current position."""
+    for name in robot.leader_arms:
+        arm = robot.leader_arms[name]
+        current = arm.read("Present_Position")   # driver.get_positions(), radians
+        arm.write("Torque_Enable", 1)            # -> set_all_modes(position)   (enter position mode)
+        arm.write("Goal_Position", current)      # -> set_all_positions(current) (now it actually holds)
+
+def release_leaders(robot):
+    """Disable leader torque so the operator can teleoperate freely."""
+    for name in robot.leader_arms:
+        robot.leader_arms[name].write("Torque_Enable", 0)
+
 @safe_disconnect
 def record(
     robot: Robot,
@@ -315,6 +328,10 @@ def record(
     if has_method(robot, "teleop_safety_stop"):
         robot.teleop_safety_stop()
 
+    # Freeze leaders at home so they can't drift before episode 0 starts
+    if policy is None and robot.leader_arms:
+        hold_leaders(robot)
+
     recorded_episodes = 0
     while True:
         if recorded_episodes >= cfg.num_episodes:
@@ -327,6 +344,10 @@ def record(
             log_say(f"{task}", cfg.play_sounds) #anr
             time.sleep(2) #anr
             single_task=task
+        # Release leaders so the operator can teleoperate this episode
+        if policy is None and robot.leader_arms:
+            release_leaders(robot)
+            time.sleep(0.5)   # let torque-off settle before the first teleop read
         record_episode(
             robot=robot,
             dataset=dataset,

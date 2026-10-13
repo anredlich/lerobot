@@ -300,6 +300,15 @@ def reset_environment(robot, events, reset_time_s, fps):
         robot.teleop_safety_stop()
 
     if robot.robot_type in ["trossen_ai_stationary", "trossen_ai_solo", "trossen_ai_mobile"]:
+        # teleop_safety_stop() homes the arms but leaves the LEADERS limp
+        # (Torque_Enable=0). Without this, they sag/drift during the sleep below
+        # and the follower jumps when teleop resumes next episode. Re-hold each
+        # leader at its just-homed position for the duration of the reset wait.
+        for name in robot.leader_arms:
+            arm = robot.leader_arms[name]
+            current = arm.read("Present_Position")
+            arm.write("Torque_Enable", 1)
+            arm.write("Goal_Position", current)
         time.sleep(reset_time_s)
     else:
         control_loop(
